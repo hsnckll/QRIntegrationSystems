@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\QrIntegrationSystems.Domain\QrIntegrationSystems.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
