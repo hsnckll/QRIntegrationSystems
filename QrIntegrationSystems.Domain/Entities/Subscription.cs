@@ -6,24 +6,21 @@ using System.Threading.Tasks;
 
 namespace QrIntegrationSystems.Domain.Entities
 {
-    public class Product
+    public class Subscription
     {
         public int Id { get; set; }
-        public int CategoryId { get; set; }
         public int BusinessId { get; set; }
-        public string Name { get; set; } = null!;
-        public string? Description { get; set; }
-        public decimal Price { get; set; }
-        public string? ImagePath { get; set; }
-        public int SortOrder { get; set; } = 0;
-        public bool IsActive { get; set; } = true;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal? AmountPaid { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? Note { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
-        // İlişki: Bir ürün bir kategoriye aittir
-        public Category Category { get; set; } = null!;
-        // İlişki: Bir ürün bir işletmeye aittir
+        // İlişki: Bir abonelik bir işletmeye aittir
         public Business Business { get; set; } = null!;
     }
+
 }

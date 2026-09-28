@@ -6,24 +6,20 @@ using System.Threading.Tasks;
 
 namespace QrIntegrationSystems.Domain.Entities
 {
-    public class Product
+    public class Category
     {
         public int Id { get; set; }
-        public int CategoryId { get; set; }
         public int BusinessId { get; set; }
         public string Name { get; set; } = null!;
-        public string? Description { get; set; }
-        public decimal Price { get; set; }
-        public string? ImagePath { get; set; }
         public int SortOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
-        // İlişki: Bir ürün bir kategoriye aittir
-        public Category Category { get; set; } = null!;
-        // İlişki: Bir ürün bir işletmeye aittir
+        // İlişki: Bir kategori bir işletmeye aittir
         public Business Business { get; set; } = null!;
+        // İlişki: Bir kategorinin birden fazla ürünü olabilir
+        public ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }
