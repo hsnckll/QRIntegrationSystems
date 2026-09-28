@@ -1,4 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// PostgreSQL Veritabaný Baðlantýsýný Servislere Ekle
+builder.Services.AddDbContext<QrIntegrationSystems.Infrastructure.Data.AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        b => b.MigrationsAssembly("QrIntegrationSystems.Infrastructure")));
 
 // Add services to the container.
 
