@@ -14,5 +14,8 @@ namespace QrIntegrationSystems.Application.Interfaces
 
         // Soft delete
         Task DeleteAsync(int businessId, int id);
+
+        // Hızlı Aktif/Pasif değiştirme (switch butonu için)
+        Task ToggleActiveAsync(int businessId, int id);
     }
 }

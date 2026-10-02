@@ -6,6 +6,7 @@ namespace QrIntegrationSystems.Application.DTOs.Business
     public class CreateBusinessDto
     {
         public string Name { get; set; } = null!;
+        public string Slug { get; set; } = null!;  // <-- Siz kendiniz gireceksiniz (örn: "doydoy", "cafe-istanbul")
         public string? OwnerName { get; set; }
         public string? Phone { get; set; }
         public string Email { get; set; } = null!;
