@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QrIntegrationSystems.API.Middlewares;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
 using QrIntegrationSystems.Infrastructure.Data;
@@ -91,6 +92,10 @@ builder.Services.AddSwaggerGen(opt =>
 });
 
 var app = builder.Build();
+
+// ── GLOBAL HATA YAKALAMA MIDDLEWARE'İ ──
+// Tüm istekleri saran ilk güvenlik katmanı:
+app.UseMiddleware<ExceptionMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {
