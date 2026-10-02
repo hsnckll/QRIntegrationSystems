@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using QrIntegrationSystems.Application.DTOs.Auth;
@@ -27,9 +27,9 @@ namespace QrIntegrationSystems.Infrastructure.Services
         public async Task<TokenResponseDto> AdminLoginAsync(AdminLoginDto dto)
         {
             var admin = await _db.SuperAdmins.FirstOrDefaultAsync(a => a.Email == dto.Email);
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, admin.Password);
-
-            if (admin == null & !isPasswordValid) throw new Exception("E-posta veya şifre hatalı");
+            // Önce null kontrolü, sonra şifre doğrulaması — sıra önemli
+            if (admin == null || !BCrypt.Net.BCrypt.Verify(dto.Password, admin.Password))
+                throw new Exception("E-posta veya şifre hatalı.");
 
             return GenerateToken(admin.Email, "SuperAdmin", null);
         }
