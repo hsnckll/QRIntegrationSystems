@@ -15,6 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("QrIntegrationSystems.Infrastructure")));
 
+// Servis Kayıtları
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -25,6 +26,7 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IEmailService, EmailService>(); // <-- E-posta Servisi Eklendi
 
 var jwtConfig = builder.Configuration.GetSection("JwtSettings");
 var secret = jwtConfig["SecretKey"] ?? "QrMenuDefaultSecretKeyMustBe32CharsLong!";
@@ -93,8 +95,6 @@ builder.Services.AddSwaggerGen(opt =>
 
 var app = builder.Build();
 
-// ── GLOBAL HATA YAKALAMA MIDDLEWARE'İ ──
-// Tüm istekleri saran ilk güvenlik katmanı:
 app.UseMiddleware<ExceptionMiddleware>();
 
 using (var scope = app.Services.CreateScope())
