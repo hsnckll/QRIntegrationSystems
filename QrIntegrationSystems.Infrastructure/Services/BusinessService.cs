@@ -103,6 +103,42 @@ namespace QrIntegrationSystems.Infrastructure.Services
             await _db.Businesses.AddAsync(newBusiness);
             await _db.SaveChangesAsync();
 
+            // ─────────────────────────────────────────
+            // Otomatik Başlangıç Aboneliği Oluştur
+            // ─────────────────────────────────────────
+            var subStart = dto.SubscriptionStartDate ?? DateTime.UtcNow;
+            DateTime subEnd;
+            if (dto.SubscriptionEndDate.HasValue == true)
+            {
+                subEnd = dto.SubscriptionEndDate.Value;
+            }
+            else
+            {
+                int months = (dto.SubscriptionMonths.HasValue == true && dto.SubscriptionMonths.Value > 0)
+                    ? dto.SubscriptionMonths.Value
+                    : 1; // Varsayılan 1 ay deneme/başlangıç paketi
+                subEnd = subStart.AddMonths(months);
+            }
+
+            var initialSubscription = new Subscription
+            {
+                BusinessId = newBusiness.Id,
+                StartDate = subStart,
+                EndDate = subEnd,
+                AmountPaid = dto.SubscriptionAmountPaid ?? 0,
+                PaymentMethod = string.IsNullOrWhiteSpace(dto.SubscriptionPaymentMethod) == false
+                    ? dto.SubscriptionPaymentMethod
+                    : "Ücretsiz / Deneme",
+                Note = string.IsNullOrWhiteSpace(dto.SubscriptionNote) == false
+                    ? dto.SubscriptionNote
+                    : "İşletme başlangıç paketi",
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            await _db.Subscriptions.AddAsync(initialSubscription);
+            await _db.SaveChangesAsync();
+
             return await GetByIdAsync(newBusiness.Id);
         }
 
