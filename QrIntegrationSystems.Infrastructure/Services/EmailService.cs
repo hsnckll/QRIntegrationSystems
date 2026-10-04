@@ -44,8 +44,8 @@ namespace QrIntegrationSystems.Infrastructure.Services
             {
                 var port = int.Parse(smtpSettings["Port"] ?? "587");
                 var senderName = smtpSettings["SenderName"] ?? "QR Menü";
-                var senderEmail = smtpSettings["SenderEmail"]!;
-                var password = smtpSettings["Password"]!;
+                var senderEmail = (smtpSettings["SenderEmail"] ?? "").Trim();
+                var password = (smtpSettings["Password"] ?? "").Replace(" ", "").Trim();
 
                 var email = new MimeMessage();
                 email.From.Add(new MailboxAddress(senderName, senderEmail));

@@ -19,5 +19,8 @@ namespace QrIntegrationSystems.Application.Interfaces
         // Görsel yükleme ayrı endpoint'ten geliyor, sadece path güncelleniyor
         Task UpdateLogoAsync(int id, string logoPath);
         Task UpdateBannerAsync(int id, string bannerPath);
+
+        // İşletmenin kendi QR okutma istatistikleri
+        Task<BusinessStatisticsDto> GetStatisticsAsync(int businessId);
     }
 }

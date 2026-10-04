@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QrIntegrationSystems.Application.DTOs.Business;
 using QrIntegrationSystems.Application.Interfaces;
@@ -195,6 +195,26 @@ namespace QrIntegrationSystems.API.Controllers
                 ValidateBusinessOwnership(id);
                 await _businessService.UpdateBannerAsync(id, request.ImagePath);
                 return Ok(new { message = "Banner başarıyla güncellendi." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // 10. İŞLETMENİN KENDİ QR TARAMA İSTATİSTİKLERİ
+        // GET /api/business/statistics
+        // ─────────────────────────────────────────
+        [Authorize(Roles = "Business")]
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics()
+        {
+            try
+            {
+                int businessId = GetCurrentBusinessId();
+                var stats = await _businessService.GetStatisticsAsync(businessId);
+                return Ok(stats);
             }
             catch (Exception ex)
             {

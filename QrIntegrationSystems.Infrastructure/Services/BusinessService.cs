@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Business;
 using QrIntegrationSystems.Application.DTOs.QRCode;
 using QrIntegrationSystems.Application.DTOs.Subscription;
@@ -202,6 +202,31 @@ namespace QrIntegrationSystems.Infrastructure.Services
             business.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+        }
+
+        // ─────────────────────────────────────────
+        // 9. İŞLETMENİN KENDİ QR TARAMA İSTATİSTİKLERİ
+        // ─────────────────────────────────────────
+        public async Task<BusinessStatisticsDto> GetStatisticsAsync(int businessId)
+        {
+            var now = DateTime.UtcNow;
+            var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
+            var thisMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var scans = await _db.QRScans
+                .AsNoTracking()
+                .Where(s => s.BusinessId == businessId)
+                .OrderByDescending(s => s.ScannedAt)
+                .Select(s => s.ScannedAt)
+                .ToListAsync();
+
+            return new BusinessStatisticsDto
+            {
+                TotalScans = scans.Count,
+                TodayScans = scans.Count(s => s >= todayStart),
+                ThisMonthScans = scans.Count(s => s >= thisMonthStart),
+                Scans = scans
+            };
         }
 
         // ─────────────────────────────────────────
