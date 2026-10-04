@@ -116,7 +116,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             {
                 int months = (dto.SubscriptionMonths.HasValue == true && dto.SubscriptionMonths.Value > 0)
                     ? dto.SubscriptionMonths.Value
-                    : 1; // Varsayılan 1 ay deneme/başlangıç paketi
+                    : 3; // Varsayılan 3 ay başlangıç paketi
                 subEnd = subStart.AddMonths(months);
             }
 
