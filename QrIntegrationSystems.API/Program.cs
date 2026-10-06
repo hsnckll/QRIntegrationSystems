@@ -100,69 +100,6 @@ app.UseMiddleware<ExceptionMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    // 1. ŞABLON: Doy Doy Döner Özel Şablonu
-    var doydoyTemplate = db.Templates.FirstOrDefault(t => t.FolderName == "doydoy");
-    if (doydoyTemplate == null)
-    {
-        doydoyTemplate = new Template
-        {
-            Name = "Doy Doy Döner Özel",
-            FolderName = "doydoy",
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Templates.Add(doydoyTemplate);
-        db.SaveChanges();
-    }
-
-    // 2. SÜPER ADMİN: Sistem Yöneticisi Girişi
-    var superAdmin = db.SuperAdmins.FirstOrDefault(s => s.Email == "smartresidora@gmail.com");
-    if (superAdmin == null)
-    {
-        var legacyAdmin = db.SuperAdmins.FirstOrDefault(s => s.Email == "admin@qrmenu.com");
-        if (legacyAdmin != null)
-        {
-            legacyAdmin.Email = "smartresidora@gmail.com";
-            legacyAdmin.Name = "Sistem Yöneticisi";
-            legacyAdmin.Password = BCrypt.Net.BCrypt.HashPassword("Admin123!");
-        }
-        else
-        {
-            db.SuperAdmins.Add(new SuperAdmin
-            {
-                Name = "Sistem Yöneticisi",
-                Email = "smartresidora@gmail.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-        db.SaveChanges();
-    }
-
-    // 3. İŞLETME: Doy Doy Hatay Döner (Giriş ve OTP Testi İçin)
-    var business = db.Businesses.FirstOrDefault(b => b.Slug == "doy-doy" || b.Email == "smartresidora@gmail.com");
-    if (business == null)
-    {
-        var newBusiness = new Business
-        {
-            Name = "Doy Doy Hatay Döner",
-            Slug = "doy-doy",
-            OwnerName = "İşletme Sahibi",
-            Phone = "0535 106 59 27",
-            Email = "smartresidora@gmail.com",
-            TemplateId = doydoyTemplate.Id,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Businesses.Add(newBusiness);
-        db.SaveChanges();
-    }
-    else
-    {
-        business.TemplateId = doydoyTemplate.Id;
-        business.Email = "smartresidora@gmail.com";
-        db.SaveChanges();
-    }
 }
 
 if (app.Environment.IsDevelopment())
