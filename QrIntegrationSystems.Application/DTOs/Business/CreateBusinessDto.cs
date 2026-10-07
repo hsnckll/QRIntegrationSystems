@@ -11,7 +11,7 @@ namespace QrIntegrationSystems.Application.DTOs.Business
         public string? Phone { get; set; }
         public string Email { get; set; } = null!;
         public string? Address { get; set; }
-        public int TemplateId { get; set; }
+        public int? TemplateId { get; set; }
 
         // Başlangıç Abonelik Bilgileri
         public DateTime? SubscriptionStartDate { get; set; }

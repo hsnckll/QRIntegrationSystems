@@ -9,6 +9,6 @@ namespace QrIntegrationSystems.Application.DTOs.Business
         public string? OwnerName { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public int TemplateId { get; set; }
+        public int? TemplateId { get; set; }
     }
 }

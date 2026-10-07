@@ -83,7 +83,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             bool templateExists = await _db.Templates
                 .AnyAsync(t => t.Id == dto.TemplateId);
 
-            if (templateExists == false)
+            if (dto.TemplateId.HasValue && templateExists == false)
                 throw new Exception("Seçilen şablon bulunamadı.");
 
             var newBusiness = new Business
@@ -157,7 +157,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             bool templateExists = await _db.Templates
                 .AnyAsync(t => t.Id == dto.TemplateId);
 
-            if (templateExists == false)
+            if (dto.TemplateId.HasValue && templateExists == false)
                 throw new Exception("Seçilen şablon bulunamadı.");
 
             business.Name = dto.Name;

@@ -113,5 +113,12 @@ app.UseStaticFiles();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var db = context.RequestServices.GetRequiredService<AppDbContext>();
+    db.AuditActor = context.User.IsInRole("SuperAdmin") ? "SuperAdmin"
+        : context.User.IsInRole("Business") ? "Business" : null;
+    await next(context);
+});
 app.MapControllers();
 app.Run();

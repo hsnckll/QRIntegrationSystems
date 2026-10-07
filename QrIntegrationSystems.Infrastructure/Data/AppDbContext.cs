@@ -9,6 +9,45 @@ namespace QrIntegrationSystems.Infrastructure.Data
         {
         }
 
+        public string? AuditActor { get; set; }
+
+        // Store scalar snapshots only; exclude OTPs, credentials and scan traffic.
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ChangeTracker.DetectChanges();
+            var changes = ChangeTracker.Entries()
+                .Where(e => AuditActor != null &&
+                    (e.Entity is Business or Category or Product or Subscription or QRCode) &&
+                    (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted))
+                .Select(e => new { Entry = e, State = e.State,
+                    Old = e.State == EntityState.Added ? null : System.Text.Json.JsonSerializer.Serialize(
+                        e.OriginalValues.Properties.ToDictionary(p => p.Name, p => e.OriginalValues[p])) })
+                .ToList();
+            if (changes.Count == 0) return await base.SaveChangesAsync(cancellationToken);
+            var ownsTransaction = Database.IsRelational() && Database.CurrentTransaction == null;
+            await using var transaction = ownsTransaction ? await Database.BeginTransactionAsync(cancellationToken) : null;
+            var result = await base.SaveChangesAsync(cancellationToken);
+            foreach (var change in changes)
+            {
+                var entry = change.Entry;
+                var entityId = (int)entry.Property("Id").CurrentValue!;
+                var businessId = entry.Entity is Business ? entityId : (int)entry.Property("BusinessId").CurrentValue!;
+                var label = entry.Entity switch { Business => "İşletme", Category => "Kategori",
+                    Product => "Ürün", Subscription => "Abonelik", _ => "QR kodu" };
+                var deleted = change.State == EntityState.Deleted ||
+                    (entry.Metadata.FindProperty("IsDeleted") != null && (bool)entry.Property("IsDeleted").CurrentValue!);
+                Logs.Add(new Log { BusinessId = businessId, EntityId = entityId,
+                    EntityType = entry.Metadata.ClrType.Name, ActorType = AuditActor!,
+                    Action = label + (deleted ? " silindi" : change.State == EntityState.Added ? " oluşturuldu" : " güncellendi"),
+                    OldValues = change.Old, NewValues = change.State == EntityState.Deleted ? null :
+                        System.Text.Json.JsonSerializer.Serialize(entry.CurrentValues.Properties.ToDictionary(p => p.Name, p => entry.CurrentValues[p])),
+                    CreatedAt = DateTime.UtcNow });
+            }
+            await base.SaveChangesAsync(cancellationToken);
+            if (transaction != null) await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+
         // Tablolarımız
         public DbSet<SuperAdmin> SuperAdmins { get; set; }
         public DbSet<Template> Templates { get; set; }

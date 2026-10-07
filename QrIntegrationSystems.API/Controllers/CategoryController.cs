@@ -5,7 +5,7 @@ using QrIntegrationSystems.Application.Interfaces;
 
 namespace QrIntegrationSystems.API.Controllers
 {
-    [Authorize(Roles = "Business")] // Sadece Business rolüne sahip giriş yapmış kişiler bu kapıyı çalabilir!
+    [Authorize(Roles = "SuperAdmin,Business")] // Sadece Business rolüne sahip giriş yapmış kişiler bu kapıyı çalabilir!
     [ApiController]
     [Route("api/[controller]")]     // Adres: /api/category
     public class CategoryController : ControllerBase
@@ -136,6 +136,13 @@ namespace QrIntegrationSystems.API.Controllers
         // ─────────────────────────────────────────
         private int GetCurrentBusinessId()
         {
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (!int.TryParse(Request.Query["businessId"], out var selectedId) || selectedId <= 0)
+                    throw new UnauthorizedAccessException("İşletme seçimi gerekli.");
+                return selectedId;
+            }
+            // Business users always use their own claim, even if a query parameter is supplied.
             var claim = User.Claims.FirstOrDefault(c => c.Type == "BusinessId");
 
             if (claim == null || int.TryParse(claim.Value, out int businessId) == false)

@@ -17,14 +17,14 @@ namespace QrIntegrationSystems.Domain.Entities
         public string? Address { get; set; }
         public string? LogoPath { get; set; }
         public string? BannerPath { get; set; }
-        public int TemplateId { get; set; }
+        public int? TemplateId { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
         // İlişki: Bir işletme bir template'e bağlı
-        public Template Template { get; set; } = null!;
+        public Template? Template { get; set; }
         // İlişki: Bir işletmenin birden fazla kategorisi olabilir
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         // İlişki: Bir işletmenin birden fazla ürünü olabilir

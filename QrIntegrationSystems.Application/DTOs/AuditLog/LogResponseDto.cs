@@ -5,6 +5,7 @@ namespace QrIntegrationSystems.Application.DTOs.AuditLog
     public class LogResponseDto
     {
         public int Id { get; set; }
+        public int BusinessId { get; set; }
 
         // "SuperAdmin" veya "Business"
         public string ActorType { get; set; } = null!;
