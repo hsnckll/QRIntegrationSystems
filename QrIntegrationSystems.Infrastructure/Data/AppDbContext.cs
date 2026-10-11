@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Domain.Entities;
 
 namespace QrIntegrationSystems.Infrastructure.Data
@@ -59,6 +59,7 @@ namespace QrIntegrationSystems.Infrastructure.Data
         public DbSet<QRCode> QRCodes { get; set; }
         public DbSet<QRScan> QRScans { get; set; }
         public DbSet<Log> Logs { get; set; }
+        public DbSet<LoginAttempt> LoginAttempts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -66,6 +67,11 @@ namespace QrIntegrationSystems.Infrastructure.Data
 
             // Supabase (PostgreSQL) şema ayarı (Gereklidir)
             modelBuilder.HasDefaultSchema("public");
+
+            // LoginAttempt yapılandırması
+            modelBuilder.Entity<LoginAttempt>()
+                .HasIndex(l => new { l.Email, l.IpAddress })
+                .IsUnique();
 
             // --- İLİŞKİLER (FLUENT API) ---
 

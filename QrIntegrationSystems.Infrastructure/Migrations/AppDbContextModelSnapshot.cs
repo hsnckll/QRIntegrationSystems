@@ -165,6 +165,39 @@ namespace QrIntegrationSystems.Infrastructure.Migrations
                     b.ToTable("Logs", "public");
                 });
 
+            modelBuilder.Entity("QrIntegrationSystems.Domain.Entities.LoginAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email", "IpAddress")
+                        .IsUnique();
+
+                    b.ToTable("LoginAttempts", "public");
+                });
+
             modelBuilder.Entity("QrIntegrationSystems.Domain.Entities.OTPCode", b =>
                 {
                     b.Property<int>("Id")

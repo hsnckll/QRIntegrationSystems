@@ -100,6 +100,17 @@ app.UseMiddleware<ExceptionMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Eski qrmenu.com kalıntılarını okutye.com ile güncelle
+    var legacyQrs = db.QRCodes.Where(q => q.TargetUrl.Contains("qrmenu.com")).ToList();
+    if (legacyQrs.Count > 0)
+    {
+        foreach (var qr in legacyQrs)
+        {
+            qr.TargetUrl = qr.TargetUrl.Replace("qrmenu.com", "okutye.com");
+        }
+        db.SaveChanges();
+    }
 }
 
 if (app.Environment.IsDevelopment())

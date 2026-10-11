@@ -1,14 +1,14 @@
-﻿using QrIntegrationSystems.Application.Interfaces;
+using QrIntegrationSystems.Application.Interfaces;
 
 namespace QrIntegrationSystems.Infrastructure.Services
 {
     public class FileService : IFileService
     {
-        // Yalnızca izin verilen resim uzantıları
-        private readonly string[] _allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        // İzin verilen dosya uzantıları (görseller ve şablon paketleri)
+        private readonly string[] _allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".zip", ".tsx", ".jsx", ".css", ".json", ".html" };
 
         // ─────────────────────────────────────────
-        // 1. GÖRSEL YÜKLE
+        // 1. DOSYA / GÖRSEL YÜKLE
         // ─────────────────────────────────────────
         public async Task<string> UploadImageAsync(Stream fileStream, string fileName, string subFolder)
         {
@@ -20,7 +20,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             // Güvenlik: Uzantı kontrolü
             if (_allowedExtensions.Contains(extension) == false)
-                throw new Exception("Geçersiz dosya formatı. Yalnızca .jpg, .jpeg, .png ve .webp formatları kabul edilir.");
+                throw new Exception("Geçersiz dosya formatı. İzin verilen formatlar: .jpg, .jpeg, .png, .webp, .zip, .tsx, .jsx, .html.");
 
             // Fiziksel klasör yolunu belirle: [ProjeKlasörü]/wwwroot/uploads/[subFolder]
             string uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");

@@ -223,6 +223,31 @@ namespace QrIntegrationSystems.API.Controllers
         }
 
         // ─────────────────────────────────────────
+        // 11. QR KODU YENİDEN ÜRET (SuperAdmin)
+        // POST /api/business/{id}/regenerate-qr
+        // ─────────────────────────────────────────
+        [Authorize(Roles = "SuperAdmin")]
+        [HttpPost("{id}/regenerate-qr")]
+        public async Task<IActionResult> RegenerateQr([FromRoute] int id)
+        {
+            try
+            {
+                var business = await _businessService.GetByIdAsync(id);
+                if (business == null)
+                {
+                    return NotFound(new { message = "İşletme bulunamadı." });
+                }
+
+                var qrPath = await _qrCodeService.GenerateAsync(id, business.Slug);
+                return Ok(new { message = "QR kod başarıyla yeniden üretildi.", qrImagePath = qrPath });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ─────────────────────────────────────────
         // GÜVENLİK YARDIMCILARI
         // ─────────────────────────────────────────
         private int GetCurrentBusinessId()

@@ -25,7 +25,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             // AKILLI MOD: Eğer henüz hosting/mail bilgileri girilmemişse
             // sistemi kilitleme, konsola yazdırarak geliştirmeye izin ver!
             // ─────────────────────────────────────────────────────────────
-            if (string.IsNullOrWhiteSpace(server) == true || server == "mail.qrmenu.com")
+            if (string.IsNullOrWhiteSpace(server) == true || server == "mail.okutye.com" || server == "mail.qrmenu.com")
             {
                 Console.WriteLine($"\n========================================================");
                 Console.WriteLine($"[SMTP BEKLEMEDE / GELİŞTİRME MODU]");

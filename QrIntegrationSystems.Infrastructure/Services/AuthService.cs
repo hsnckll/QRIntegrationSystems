@@ -35,15 +35,17 @@ namespace QrIntegrationSystems.Infrastructure.Services
             return GenerateToken(admin.Email, "SuperAdmin", null);
         }
 
-        public async Task SendOtpAsync(LoginRequestDto dto)
+        public async Task SendOtpAsync(LoginRequestDto dto, string ipAddress)
         {
+            await CheckLockoutAsync(dto.Email, ipAddress);
+
             var business = await _db.Businesses
                 .FirstOrDefaultAsync(b => b.Email == dto.Email && b.IsDeleted == false && b.IsActive == true);
 
             if (business == null)
                 throw new Exception("Aktif bir işletme bulunamadı.");
 
-            var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+            var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(); 
 
             var otp = new OTPCode
             {
@@ -73,8 +75,10 @@ namespace QrIntegrationSystems.Infrastructure.Services
             await _emailService.SendAsync(dto.Email, emailSubject, emailBody);
         }
 
-        public async Task<TokenResponseDto> VerifyOtpAsync(OTPVerifyDto dto)
+        public async Task<TokenResponseDto> VerifyOtpAsync(OTPVerifyDto dto, string ipAddress)
         {
+            await CheckLockoutAsync(dto.Email, ipAddress);
+
             const int MaxAttempts = 5;
 
             var otpRecord = await _db.OTPCodes
@@ -85,7 +89,10 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (otpRecord == null)
+            {
+                await RecordFailedAttemptAsync(dto.Email, ipAddress);
                 throw new Exception("Geçersiz veya süresi dolmuş kod.");
+            }
 
             if (otpRecord.Code != dto.Code)
             {
@@ -94,10 +101,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 if (otpRecord.FailedAttempts >= MaxAttempts)
                     otpRecord.IsUsed = true; // 5. yanlış denemede kodu iptal et
 
-                await _db.SaveChangesAsync();
+                await RecordFailedAttemptAsync(dto.Email, ipAddress);
                 throw new Exception("Geçersiz veya süresi dolmuş kod.");
             }
 
+            // Başarılı
+            await ResetLockoutAsync(dto.Email, ipAddress);
             otpRecord.IsUsed = true;
             await _db.SaveChangesAsync();
 
@@ -107,6 +116,61 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 throw new Exception("İşletme bulunamadı.");
 
             return GenerateToken(business.Email, "Business", business.Id);
+        }
+
+        // --- KİLİT MEKANİZMASI METOTLARI ---
+
+        private async Task CheckLockoutAsync(string email, string ipAddress)
+        {
+            var attempt = await _db.LoginAttempts
+                .FirstOrDefaultAsync(l => l.Email == email && l.IpAddress == ipAddress);
+
+            if (attempt != null && attempt.LockedUntil > DateTime.UtcNow)
+            {
+                var remainingSeconds = (int)(attempt.LockedUntil.Value - DateTime.UtcNow).TotalSeconds;
+                throw new Exception($"IP_LOCKED:{remainingSeconds}");
+            }
+        }
+
+        private async Task RecordFailedAttemptAsync(string email, string ipAddress)
+        {
+            var attempt = await _db.LoginAttempts
+                .FirstOrDefaultAsync(l => l.Email == email && l.IpAddress == ipAddress);
+
+            if (attempt == null)
+            {
+                attempt = new LoginAttempt { Email = email, IpAddress = ipAddress, FailedCount = 1, LastAttemptAt = DateTime.UtcNow };
+                _db.LoginAttempts.Add(attempt);
+            }
+            else
+            {
+                attempt.FailedCount++;
+                attempt.LastAttemptAt = DateTime.UtcNow;
+
+                if (attempt.FailedCount >= 5)
+                {
+                    attempt.LockedUntil = DateTime.UtcNow.AddMinutes(5);
+                }
+            }
+            await _db.SaveChangesAsync();
+
+            if (attempt.FailedCount >= 5)
+            {
+                throw new Exception($"IP_LOCKED:300");
+            }
+        }
+
+        private async Task ResetLockoutAsync(string email, string ipAddress)
+        {
+            var attempt = await _db.LoginAttempts
+                .FirstOrDefaultAsync(l => l.Email == email && l.IpAddress == ipAddress);
+                
+            if (attempt != null)
+            {
+                attempt.FailedCount = 0;
+                attempt.LockedUntil = null;
+                await _db.SaveChangesAsync();
+            }
         }
 
         private TokenResponseDto GenerateToken(string email, string role, int? businessId)
