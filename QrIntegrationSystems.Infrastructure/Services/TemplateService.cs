@@ -9,10 +9,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class TemplateService : ITemplateService
     {
         private readonly AppDbContext _db;
+        private readonly TemplatePackageStore _packages;
 
-        public TemplateService(AppDbContext db)
+        public TemplateService(AppDbContext db, TemplatePackageStore packages)
         {
             _db = db;
+            _packages = packages;
         }
 
         // ─────────────────────────────────────────
@@ -21,7 +23,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
         // ─────────────────────────────────────────
         public async Task<List<TemplateResponseDto>> GetAllAsync()
         {
-            return await _db.Templates
+            var list = await _db.Templates
                 .AsNoTracking() // Sadece okuma yapıldığı için takip mekanizmasını kapatıp performans kazanıyoruz
                 .OrderBy(t => t.Id)
                 .Select(t => new TemplateResponseDto
@@ -32,50 +34,24 @@ namespace QrIntegrationSystems.Infrastructure.Services
                     ThumbnailPath = t.ThumbnailPath  // Önizleme görseli yolu
                 })
                 .ToListAsync();
+            foreach(var item in list) { item.EntryUrl = _packages.EntryUrl(item.FolderName); item.IsPublished = _packages.Published(item.FolderName); item.Version = _packages.Manifest(item.FolderName)?.Version; }
+            return list;
         }
 
         // ─────────────────────────────────────────
         // YENİ ŞABLON OLUŞTUR
         // ─────────────────────────────────────────
-        public async Task<TemplateResponseDto> CreateAsync(TemplateCreateDto dto)
-        {
-            var cleanFolder = dto.FolderName.Trim().ToLower();
-
-            var exists = await _db.Templates.AnyAsync(t => t.FolderName == cleanFolder);
-            if (exists == true)
-            {
-                throw new Exception("Bu kod adına sahip bir şablon zaten mevcut.");
-            }
-
-            var template = new Template
-            {
-                Name = dto.Name.Trim(),
-                FolderName = cleanFolder,
-                ThumbnailPath = dto.ThumbnailPath,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _db.Templates.AddAsync(template);
-            await _db.SaveChangesAsync();
-
-            return new TemplateResponseDto
-            {
-                Id = template.Id,
-                Name = template.Name,
-                FolderName = template.FolderName,
-                ThumbnailPath = template.ThumbnailPath
-            };
-        }
+        public Task<TemplateResponseDto> CreateAsync(TemplateCreateDto dto) => throw new InvalidOperationException("Şablon oluşturmak için hazırlanmış web paketi yükleyin.");
 
         // ─────────────────────────────────────────
         // ŞABLON SİL (SuperAdmin)
         // ─────────────────────────────────────────
         public async Task DeleteAsync(int id)
         {
-            var inUseCount = await _db.Businesses.CountAsync(b => b.TemplateId == id && b.IsDeleted == false);
+            var inUseCount = await _db.Businesses.CountAsync(b => b.TemplateId == id);
             if (inUseCount > 0)
             {
-                throw new Exception($"Bu şablon şu anda {inUseCount} aktif işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
+                throw new Exception($"Bu şablon şu anda {inUseCount} işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
             }
 
             var template = await _db.Templates.FindAsync(id);
@@ -84,8 +60,10 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 throw new Exception("Silinmek istenen şablon bulunamadı.");
             }
 
+            var packagePath = _packages.DirectoryFor(template.FolderName);
             _db.Templates.Remove(template);
             await _db.SaveChangesAsync();
+            if(Directory.Exists(packagePath)) Directory.Delete(packagePath, true);
         }
     }
 }

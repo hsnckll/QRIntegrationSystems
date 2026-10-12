@@ -23,13 +23,18 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddSingleton<TemplatePackageStore>();
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => o.MultipartBodyLengthLimit = 36 * 1024 * 1024);
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o => { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; foreach(var proxy in builder.Configuration.GetSection("AppSettings:TrustedProxies").Get<string[]>() ?? []) o.KnownProxies.Add(System.Net.IPAddress.Parse(proxy)); });
+
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IEmailService, EmailService>(); // <-- E-posta Servisi Eklendi
 
 var jwtConfig = builder.Configuration.GetSection("JwtSettings");
-var secret = jwtConfig["SecretKey"] ?? "QrMenuDefaultSecretKeyMustBe32CharsLong!";
+var secret = jwtConfig["SecretKey"] ?? throw new InvalidOperationException("JwtSettings:SecretKey gerekli.");
+if (secret.Length < 32) throw new InvalidOperationException("JWT anahtarı en az 32 karakter olmalı.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -52,7 +57,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+        policy.WithOrigins(builder.Configuration.GetSection("AppSettings:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5177", "http://127.0.0.1:5177"])
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -97,21 +102,7 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    // Eski qrmenu.com kalıntılarını okutye.com ile güncelle
-    var legacyQrs = db.QRCodes.Where(q => q.TargetUrl.Contains("qrmenu.com")).ToList();
-    if (legacyQrs.Count > 0)
-    {
-        foreach (var qr in legacyQrs)
-        {
-            qr.TargetUrl = qr.TargetUrl.Replace("qrmenu.com", "okutye.com");
-        }
-        db.SaveChanges();
-    }
-}
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -132,4 +123,5 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.MapControllers();
+app.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ready" }) : Results.StatusCode(503));
 app.Run();

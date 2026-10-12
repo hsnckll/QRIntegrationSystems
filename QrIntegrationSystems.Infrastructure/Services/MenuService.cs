@@ -9,10 +9,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class MenuService : IMenuService
     {
         private readonly AppDbContext _db;
+        private readonly TemplatePackageStore _packages;
 
-        public MenuService(AppDbContext db)
+        public MenuService(AppDbContext db, TemplatePackageStore packages)
         {
             _db = db;
+            _packages = packages;
         }
 
         public async Task<PublicMenuDto?> GetMenuBySlugAsync(string slug)
@@ -93,7 +95,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 LogoPath = business.LogoPath,
                 BannerPath = business.BannerPath,
                 // Frontend bu TemplateName değerine bakarak (Örn: "template-modern") hangi tasarımı çizeceğini anlar
-                TemplateName = business.Template != null ? business.Template.FolderName : "template-modern",
+                TemplateName = business.Template != null && _packages.Published(business.Template.FolderName) ? business.Template.FolderName : "",
                 Categories = categories
             };
         }

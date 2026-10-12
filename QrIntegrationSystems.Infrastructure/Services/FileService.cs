@@ -5,7 +5,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class FileService : IFileService
     {
         // İzin verilen dosya uzantıları (görseller ve şablon paketleri)
-        private readonly string[] _allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".zip", ".tsx", ".jsx", ".css", ".json", ".html" };
+        private readonly string[] _allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
         // ─────────────────────────────────────────
         // 1. DOSYA / GÖRSEL YÜKLE
@@ -20,11 +20,13 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             // Güvenlik: Uzantı kontrolü
             if (_allowedExtensions.Contains(extension) == false)
-                throw new Exception("Geçersiz dosya formatı. İzin verilen formatlar: .jpg, .jpeg, .png, .webp, .zip, .tsx, .jsx, .html.");
+                throw new Exception("Geçersiz dosya formatı. İzin verilen formatlar: .jpg, .jpeg, .png, .webp.");
 
             // Fiziksel klasör yolunu belirle: [ProjeKlasörü]/wwwroot/uploads/[subFolder]
             string uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-            string targetFolder = Path.Combine(uploadsRoot, subFolder.Trim('/', '\\'));
+            if (!new[] { "general", "logos", "banners", "products" }.Contains(subFolder)) throw new Exception("Geçersiz görsel klasörü.");
+            if(fileStream.Length > 8 * 1024 * 1024) throw new Exception("Görsel en fazla 8 MB olabilir.");
+            string targetFolder = Path.Combine(uploadsRoot, subFolder);
 
             // Klasör yoksa oluştur
             if (Directory.Exists(targetFolder) == false)
@@ -57,7 +59,9 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             // URL formatındaki "/uploads/..." yolunu fiziksel işletim sistemi yoluna dönüştür
             string trimmedPath = filePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar);
-            string physicalPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", trimmedPath);
+            string root = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")) + Path.DirectorySeparatorChar;
+            string physicalPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", trimmedPath));
+            if (!physicalPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new Exception("Geçersiz dosya yolu.");
 
             // Dosya gerçekten diskte varsa sil
             if (File.Exists(physicalPath) == true)

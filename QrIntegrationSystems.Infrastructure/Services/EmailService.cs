@@ -25,17 +25,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             // AKILLI MOD: Eğer henüz hosting/mail bilgileri girilmemişse
             // sistemi kilitleme, konsola yazdırarak geliştirmeye izin ver!
             // ─────────────────────────────────────────────────────────────
-            if (string.IsNullOrWhiteSpace(server) == true || server == "mail.okutye.com" || server == "mail.qrmenu.com")
-            {
-                Console.WriteLine($"\n========================================================");
-                Console.WriteLine($"[SMTP BEKLEMEDE / GELİŞTİRME MODU]");
-                Console.WriteLine($"Kime: {toEmail}");
-                Console.WriteLine($"Konu: {subject}");
-                Console.WriteLine($"İçerik (HTML): {body}");
-                Console.WriteLine($"NOT: Hosting aldığınızda appsettings.json'a bilgileri girince bu mesaj doğrudan e-postaya gidecektir.");
-                Console.WriteLine($"========================================================\n");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(server)) throw new InvalidOperationException("SMTP sunucusu yapılandırılmalı.");
 
             // ─────────────────────────────────────────────────────────────
             // CANLI MOD: Hosting bilgileri girildiğinde gerçek e-posta gönderimi
@@ -69,7 +59,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             {
                 // Mail sunucusunda anlık bir aksilik çıkarsa projeyi çökertme, konsola hata bas
                 Console.WriteLine($"[SMTP HATASI]: E-posta gönderilemedi! Hata detayı: {ex.Message}");
-                Console.WriteLine($"[YEDEK KONSOL MESAJI] Kime: {toEmail} | İçerik: {body}");
+                throw new InvalidOperationException("E-posta gönderilemedi. Daha sonra tekrar deneyin.");
             }
         }
     }

@@ -12,10 +12,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class BusinessService : IBusinessService
     {
         private readonly AppDbContext _db;
+        private readonly TemplatePackageStore _packages;
 
-        public BusinessService(AppDbContext db)
+        public BusinessService(AppDbContext db, TemplatePackageStore packages)
         {
             _db = db;
+            _packages = packages;
         }
 
         // ─────────────────────────────────────────
@@ -85,6 +87,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             if (dto.TemplateId.HasValue && templateExists == false)
                 throw new Exception("Seçilen şablon bulunamadı.");
+            if(dto.TemplateId.HasValue) { var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value); if(selectedTemplate == null || !_packages.Published(selectedTemplate.FolderName)) throw new Exception("Seçilen şablon henüz kullanıma açılmadı."); }
 
             var newBusiness = new Business
             {
@@ -159,6 +162,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             if (dto.TemplateId.HasValue && templateExists == false)
                 throw new Exception("Seçilen şablon bulunamadı.");
+            if(dto.TemplateId.HasValue) { var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value); if(selectedTemplate == null || !_packages.Published(selectedTemplate.FolderName)) throw new Exception("Seçilen şablon henüz kullanıma açılmadı."); }
 
             business.Name = dto.Name;
             business.OwnerName = dto.OwnerName;
