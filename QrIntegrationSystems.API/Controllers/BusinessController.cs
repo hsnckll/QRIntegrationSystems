@@ -11,11 +11,13 @@ namespace QrIntegrationSystems.API.Controllers
     {
         private readonly IBusinessService _businessService;
         private readonly IQrCodeService _qrCodeService;
+        private readonly IFileService _files;
 
-        public BusinessController(IBusinessService businessService, IQrCodeService qrCodeService)
+        public BusinessController(IBusinessService businessService, IQrCodeService qrCodeService, IFileService files)
         {
             _businessService = businessService;
             _qrCodeService = qrCodeService;
+            _files = files;
         }
 
         // ─────────────────────────────────────────
@@ -33,7 +35,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -52,7 +54,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return NotFound(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -72,7 +74,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -98,7 +100,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -120,7 +122,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -139,7 +141,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -158,7 +160,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -173,12 +175,13 @@ namespace QrIntegrationSystems.API.Controllers
             try
             {
                 ValidateBusinessOwnership(id);
+                await _files.EnsureImageAccessAsync(request.ImagePath, id, User.IsInRole("SuperAdmin"));
                 await _businessService.UpdateLogoAsync(id, request.ImagePath);
                 return Ok(new { message = "Logo başarıyla güncellendi." });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -193,12 +196,13 @@ namespace QrIntegrationSystems.API.Controllers
             try
             {
                 ValidateBusinessOwnership(id);
+                await _files.EnsureImageAccessAsync(request.ImagePath, id, User.IsInRole("SuperAdmin"));
                 await _businessService.UpdateBannerAsync(id, request.ImagePath);
                 return Ok(new { message = "Banner başarıyla güncellendi." });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -218,7 +222,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -243,7 +247,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 

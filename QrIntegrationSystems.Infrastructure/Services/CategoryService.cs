@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Category;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
@@ -48,7 +49,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(c => c.Id == id && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (category == null)
-                throw new Exception("Kategori bulunamadı.");
+                throw new ValidationException("Kategori bulunamadı.");
 
             return new CategoryResponseDto
             {
@@ -72,7 +73,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .AnyAsync(b => b.Id == businessId && b.IsDeleted == false);
 
             if (businessExists == false)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
             // Aynı isimde kategori var mı kontrolü
             var nameExists = await _db.Categories
@@ -81,7 +82,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                             && c.IsDeleted == false);
 
             if (nameExists == true)
-                throw new Exception("Bu isimde bir kategori zaten mevcut.");
+                throw new ValidationException("Bu isimde bir kategori zaten mevcut.");
 
             var newCategory = new Category
             {
@@ -118,7 +119,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(c => c.Id == id && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (category == null)
-                throw new Exception("Kategori bulunamadı.");
+                throw new ValidationException("Kategori bulunamadı.");
 
             // Kendi adı dışında aynı isimde başka kategori var mı kontrolü
             var nameExists = await _db.Categories
@@ -128,7 +129,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                             && c.IsDeleted == false);
 
             if (nameExists == true)
-                throw new Exception("Bu isimde başka bir kategori zaten mevcut.");
+                throw new ValidationException("Bu isimde başka bir kategori zaten mevcut.");
 
             category.Name = dto.Name.Trim();
             category.SortOrder = dto.SortOrder;
@@ -159,7 +160,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(c => c.Id == id && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (category == null)
-                throw new Exception("Silinecek kategori bulunamadı.");
+                throw new ValidationException("Silinecek kategori bulunamadı.");
 
             // Kategoriyi sil
             category.IsDeleted = true;
@@ -184,7 +185,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(c => c.Id == id && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (category == null)
-                throw new Exception("Kategori bulunamadı.");
+                throw new ValidationException("Kategori bulunamadı.");
 
             // Aktifse pasif, pasifse aktif yapar
             category.IsActive = (category.IsActive == false);

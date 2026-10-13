@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Template;
 using QrIntegrationSystems.Application.Interfaces;
@@ -41,7 +42,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
         // ─────────────────────────────────────────
         // YENİ ŞABLON OLUŞTUR
         // ─────────────────────────────────────────
-        public Task<TemplateResponseDto> CreateAsync(TemplateCreateDto dto) => throw new InvalidOperationException("Şablon oluşturmak için hazırlanmış web paketi yükleyin.");
+        public Task<TemplateResponseDto> CreateAsync(TemplateCreateDto dto) => throw new ValidationException("Şablon oluşturmak için hazırlanmış web paketi yükleyin.");
 
         // ─────────────────────────────────────────
         // ŞABLON SİL (SuperAdmin)
@@ -51,13 +52,13 @@ namespace QrIntegrationSystems.Infrastructure.Services
             var inUseCount = await _db.Businesses.CountAsync(b => b.TemplateId == id);
             if (inUseCount > 0)
             {
-                throw new Exception($"Bu şablon şu anda {inUseCount} işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
+                throw new ValidationException($"Bu şablon şu anda {inUseCount} işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
             }
 
             var template = await _db.Templates.FindAsync(id);
             if (template == null)
             {
-                throw new Exception("Silinmek istenen şablon bulunamadı.");
+                throw new ValidationException("Silinmek istenen şablon bulunamadı.");
             }
 
             var packagePath = _packages.DirectoryFor(template.FolderName);

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QrIntegrationSystems.Application.DTOs.Product;
 using QrIntegrationSystems.Application.Interfaces;
@@ -11,10 +11,12 @@ namespace QrIntegrationSystems.API.Controllers
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
+        private readonly IFileService _files;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, IFileService files)
         {
             _productService = productService;
+            _files = files;
         }
 
         // ─────────────────────────────────────────
@@ -32,7 +34,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -51,7 +53,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return NotFound(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -70,7 +72,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -89,7 +91,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -108,7 +110,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -127,7 +129,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -141,12 +143,13 @@ namespace QrIntegrationSystems.API.Controllers
             try
             {
                 int businessId = GetCurrentBusinessId();
+                await _files.EnsureImageAccessAsync(request.ImagePath, businessId, User.IsInRole("SuperAdmin"));
                 await _productService.UpdateImageAsync(businessId, id, request.ImagePath);
                 return Ok(new { message = "Ürün görseli başarıyla güncellendi." });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 

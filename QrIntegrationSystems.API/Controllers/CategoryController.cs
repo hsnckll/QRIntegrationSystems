@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QrIntegrationSystems.Application.DTOs.Category;
 using QrIntegrationSystems.Application.Interfaces;
@@ -32,7 +32,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -51,7 +51,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return NotFound(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -70,7 +70,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -89,7 +89,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -108,7 +108,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -127,7 +127,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 

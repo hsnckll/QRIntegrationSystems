@@ -123,7 +123,8 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
             var path = Path.Combine(directory, asset.Replace('/', Path.DirectorySeparatorChar));
             if (!System.IO.File.Exists(path)) return NotFound();
             Response.Headers["Content-Security-Policy"] = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' https: http:; style-src 'unsafe-inline' https: http:; img-src https: http: data:; font-src https: http: data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'";
-            Response.Headers["Access-Control-Allow-Origin"] = "*"; // Module scripts load from an opaque sandbox origin.\n            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            Response.Headers["Access-Control-Allow-Origin"] = "*"; // Module scripts load from an opaque sandbox origin.
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
             Response.Headers["Referrer-Policy"] = "no-referrer";
             Response.Headers["Cache-Control"] = "no-cache";
             var ext = Path.GetExtension(path).ToLowerInvariant();

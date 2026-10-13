@@ -7,6 +7,7 @@ namespace QrIntegrationSystems.Application.Interfaces
     {
         Task<List<BusinessListDto>> GetAllAsync();
         Task<BusinessDetailDto> GetByIdAsync(int id);
+        Task<List<BusinessDetailDto>> GetAllDetailsAsync();
         Task<BusinessDetailDto> CreateAsync(CreateBusinessDto dto);
         Task<BusinessDetailDto> UpdateAsync(int id, UpdateBusinessDto dto);
 

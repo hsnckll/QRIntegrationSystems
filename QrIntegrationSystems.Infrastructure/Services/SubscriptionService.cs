@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Subscription;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
@@ -48,11 +49,11 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .AnyAsync(b => b.Id == businessId && b.IsDeleted == false);
 
             if (businessExists == false)
-                throw new Exception("Abonelik eklenecek işletme bulunamadı.");
+                throw new ValidationException("Abonelik eklenecek işletme bulunamadı.");
 
             // Tarih mantık kontrolü: Bitiş tarihi başlangıçtan önce olamaz!
             if (dto.EndDate <= dto.StartDate)
-                throw new Exception("Abonelik bitiş tarihi, başlangıç tarihinden sonraki bir tarih olmalıdır.");
+                throw new ValidationException("Abonelik bitiş tarihi, başlangıç tarihinden sonraki bir tarih olmalıdır.");
 
             var newSubscription = new Subscription
             {
@@ -90,7 +91,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(s => s.Id == id && s.BusinessId == businessId && s.IsDeleted == false);
 
             if (subscription == null)
-                throw new Exception("Silinecek abonelik kaydı bulunamadı.");
+                throw new ValidationException("Silinecek abonelik kaydı bulunamadı.");
 
             subscription.IsDeleted = true;
             subscription.DeletedAt = DateTime.UtcNow;

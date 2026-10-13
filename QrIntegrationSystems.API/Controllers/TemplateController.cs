@@ -27,11 +27,11 @@ namespace QrIntegrationSystems.API.Controllers
             try
             {
                 var templates = await _templateService.GetAllAsync();
-                return Ok(templates);
+                return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.IsPublished).ToList());
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -50,7 +50,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -69,7 +69,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
     }

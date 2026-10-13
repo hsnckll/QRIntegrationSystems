@@ -31,7 +31,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -49,7 +49,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -67,7 +67,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
 
@@ -85,7 +85,7 @@ namespace QrIntegrationSystems.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return ApiErrors.FromException(this, ex);
             }
         }
     }

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using QrIntegrationSystems.Application.Interfaces;
@@ -29,7 +30,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == businessId && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("QR kod üretilecek işletme bulunamadı.");
+                throw new ValidationException("QR kod üretilecek işletme bulunamadı.");
 
             // 2. Hedef Menü URL'sini belirle
             string baseUrl = _config["AppSettings:MenuBaseUrl"] ?? "https://{slug}.okutye.com";

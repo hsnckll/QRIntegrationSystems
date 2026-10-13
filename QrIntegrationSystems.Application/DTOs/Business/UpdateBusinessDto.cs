@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 namespace QrIntegrationSystems.Application.DTOs.Business
 {
     // İşletme bilgilerini güncellerken kullanılır.
@@ -5,6 +6,7 @@ namespace QrIntegrationSystems.Application.DTOs.Business
     // LogoPath ve BannerPath ayrı upload endpoint'inden yönetilir.
     public class UpdateBusinessDto
     {
+        [Required, StringLength(120), RegularExpression(@"(?s).*\S.*", ErrorMessage = "İsim boş olamaz.")]
         public string Name { get; set; } = null!;
         public string? OwnerName { get; set; }
         public string? Phone { get; set; }

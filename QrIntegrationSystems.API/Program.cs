@@ -1,3 +1,4 @@
+using QrIntegrationSystems.API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +25,8 @@ builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<TemplatePackageStore>();
+builder.Services.AddSingleton<AuthSessionStore>();
+builder.Services.AddQrRateLimits();
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => o.MultipartBodyLengthLimit = 36 * 1024 * 1024);
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o => { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; foreach(var proxy in builder.Configuration.GetSection("AppSettings:TrustedProxies").Get<string[]>() ?? []) o.KnownProxies.Add(System.Net.IPAddress.Parse(proxy)); });
 
@@ -37,21 +40,7 @@ var secret = jwtConfig["SecretKey"] ?? throw new InvalidOperationException("JwtS
 if (secret.Length < 32) throw new InvalidOperationException("JWT anahtarı en az 32 karakter olmalı.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtConfig["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtConfig["Audience"],
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+    .AddJwtBearer(options => SecuritySetup.ConfigureJwt(options, builder.Configuration));
 
 builder.Services.AddCors(options =>
 {
@@ -115,6 +104,7 @@ app.UseStaticFiles();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
     var db = context.RequestServices.GetRequiredService<AppDbContext>();

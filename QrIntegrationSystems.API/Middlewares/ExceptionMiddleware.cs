@@ -8,11 +8,13 @@ namespace QrIntegrationSystems.API.Middlewares
     {
         private readonly RequestDelegate _next; // Boru hattındaki bir sonraki middleware/controller
         private readonly ILogger<ExceptionMiddleware> _logger;
+        private readonly IHostEnvironment _environment;
 
-        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IHostEnvironment environment)
         {
             _next = next;
             _logger = logger;
+            _environment = environment;
         }
 
         // İstek geldiğinde otomatik çalışan metot
@@ -32,7 +34,7 @@ namespace QrIntegrationSystems.API.Middlewares
         }
 
         // Hata olduğunda React'e döneceğimiz temiz JSON paketi
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError; // 500
@@ -43,11 +45,13 @@ namespace QrIntegrationSystems.API.Middlewares
                 statusCode = context.Response.StatusCode,
                 message = "Sunucuda beklenmeyen bir hata oluştu.",
                 // Geliştirme aşamasında hatanın asıl nedenini görebilmek için:
-                detail = exception.Message 
+                correlationId = context.TraceIdentifier,
+                detail = _environment.IsDevelopment() ? exception.Message : null 
             };
 
             var jsonOptions = new JsonSerializerOptions
             {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase // React için küçük harfle başlasın (success, statusCode)
             };
 

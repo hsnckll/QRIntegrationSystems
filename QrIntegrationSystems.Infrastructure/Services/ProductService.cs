@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Product;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
@@ -52,7 +53,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId && p.IsDeleted == false);
 
             if (product == null)
-                throw new Exception("Ürün bulunamadı.");
+                throw new ValidationException("Ürün bulunamadı.");
 
             return MapToResponseDto(product);
         }
@@ -64,14 +65,14 @@ namespace QrIntegrationSystems.Infrastructure.Services
         {
             // Fiyat kontrolü
             if (dto.Price < 0)
-                throw new Exception("Ürün fiyatı 0'dan küçük olamaz.");
+                throw new ValidationException("Ürün fiyatı 0'dan küçük olamaz.");
 
             // Seçilen kategori gerçekten bu işletmeye mi ait kontrolü
             var categoryExists = await _db.Categories
                 .AnyAsync(c => c.Id == dto.CategoryId && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (categoryExists == false)
-                throw new Exception("Geçerli bir kategori bulunamadı veya seçilen kategori işletmenize ait değil.");
+                throw new ValidationException("Geçerli bir kategori bulunamadı veya seçilen kategori işletmenize ait değil.");
 
             var newProduct = new Product
             {
@@ -99,20 +100,20 @@ namespace QrIntegrationSystems.Infrastructure.Services
         public async Task<ProductResponseDto> UpdateAsync(int businessId, int id, UpdateProductDto dto)
         {
             if (dto.Price < 0)
-                throw new Exception("Ürün fiyatı 0'dan küçük olamaz.");
+                throw new ValidationException("Ürün fiyatı 0'dan küçük olamaz.");
 
             var product = await _db.Products
                 .FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId && p.IsDeleted == false);
 
             if (product == null)
-                throw new Exception("Güncellenecek ürün bulunamadı.");
+                throw new ValidationException("Güncellenecek ürün bulunamadı.");
 
             // Güncellenen kategori bu işletmeye mi ait kontrolü
             var categoryExists = await _db.Categories
                 .AnyAsync(c => c.Id == dto.CategoryId && c.BusinessId == businessId && c.IsDeleted == false);
 
             if (categoryExists == false)
-                throw new Exception("Geçerli bir kategori bulunamadı veya seçilen kategori işletmenize ait değil.");
+                throw new ValidationException("Geçerli bir kategori bulunamadı veya seçilen kategori işletmenize ait değil.");
 
             product.CategoryId = dto.CategoryId;
             product.Name = dto.Name.Trim();
@@ -136,7 +137,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId && p.IsDeleted == false);
 
             if (product == null)
-                throw new Exception("Silinecek ürün bulunamadı.");
+                throw new ValidationException("Silinecek ürün bulunamadı.");
 
             product.IsDeleted = true;
             product.DeletedAt = DateTime.UtcNow;
@@ -154,7 +155,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId && p.IsDeleted == false);
 
             if (product == null)
-                throw new Exception("Ürün bulunamadı.");
+                throw new ValidationException("Ürün bulunamadı.");
 
             product.IsActive = (product.IsActive == false);
             product.UpdatedAt = DateTime.UtcNow;
@@ -171,7 +172,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(p => p.Id == id && p.BusinessId == businessId && p.IsDeleted == false);
 
             if (product == null)
-                throw new Exception("Ürün bulunamadı.");
+                throw new ValidationException("Ürün bulunamadı.");
 
             product.ImagePath = imagePath;
             product.UpdatedAt = DateTime.UtcNow;

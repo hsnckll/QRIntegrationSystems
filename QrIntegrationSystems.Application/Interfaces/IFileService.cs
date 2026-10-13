@@ -11,9 +11,10 @@ namespace QrIntegrationSystems.Application.Interfaces
         //
         // Dönen değer  : "/uploads/businesses/1/products/uuid.jpg" gibi
         //                DB'ye kaydedilecek göreli path
-        Task<string> UploadImageAsync(Stream fileStream, string fileName, string subFolder);
+        Task<string> UploadImageAsync(Stream fileStream, string fileName, string subFolder, int? businessId, bool isSuperAdmin = false);
 
         // filePath: DB'de kayıtlı göreli path ("/uploads/...")
-        Task DeleteAsync(string filePath);
+        Task DeleteAsync(string filePath, int? businessId, bool isSuperAdmin = false);
+        Task EnsureImageAccessAsync(string? filePath, int? businessId, bool isSuperAdmin = false);
     }
 }
