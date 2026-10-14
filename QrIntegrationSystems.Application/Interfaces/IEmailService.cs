@@ -5,6 +5,6 @@ namespace QrIntegrationSystems.Application.Interfaces
     // Application katmanı "nasıl gönderildiğini" bilmez, sadece "gönder" der.
     public interface IEmailService
     {
-        Task SendAsync(string toEmail, string subject, string body);
+        Task SendAsync(string toEmail, string subject, string body, string? textBody = null);
     }
 }

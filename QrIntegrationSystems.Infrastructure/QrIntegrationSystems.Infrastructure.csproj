@@ -29,4 +29,8 @@
   <ItemGroup>
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="EmailTemplates\otp-login.html" />
+    <EmbeddedResource Include="EmailTemplates\okutye-logo.png" />
+  </ItemGroup>
 </Project>

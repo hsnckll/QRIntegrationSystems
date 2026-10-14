@@ -11,11 +11,13 @@ using QrIntegrationSystems.Application.DTOs.Auth;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
 using QrIntegrationSystems.Infrastructure.Data;
+using QrIntegrationSystems.Infrastructure.EmailTemplates;
 
 namespace QrIntegrationSystems.Infrastructure.Services;
 
 public sealed class AuthService(AppDbContext db, IOptions<JwtOptions> options, IEmailService email, AuthSessionStore sessions) : IAuthService
 {
+    private const int OtpValidityMinutes = 5;
     private readonly JwtOptions jwt = options.Value;
     private static string Normalize(string value) => value.Trim().ToLowerInvariant();
     public async Task<TokenResponseDto> AdminLoginAsync(AdminLoginDto dto, string ipAddress = "unknown")
@@ -44,9 +46,9 @@ public sealed class AuthService(AppDbContext db, IOptions<JwtOptions> options, I
         if (await db.OTPCodes.CountAsync(o => o.Email == address && o.CreatedAt > now.AddHours(-1)) >= 10) throw new AuthRateLimitException(3600);
         var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         // Mail must succeed before a newer challenge replaces existing usable challenges.
-        await email.SendAsync(address, "QR Menü Giriş Doğrulama Kodunuz", $"<p>Giriş doğrulama kodunuz:</p><strong>{code}</strong><p>Kod 5 dakika geçerlidir.</p>");
+        await email.SendAsync(address, "OkutYe giriş doğrulama kodunuz", OtpEmailTemplate.Render(code, OtpValidityMinutes), OtpEmailTemplate.RenderText(code, OtpValidityMinutes));
         foreach (var old in await db.OTPCodes.Where(o => o.Email == address && !o.IsUsed).ToListAsync()) old.IsUsed = true;
-        db.OTPCodes.Add(new OTPCode { Email = address, Code = Digest(address, code), CreatedAt = now, ExpiresAt = now.AddMinutes(5), IsUsed = false });
+        db.OTPCodes.Add(new OTPCode { Email = address, Code = Digest(address, code), CreatedAt = now, ExpiresAt = now.AddMinutes(OtpValidityMinutes), IsUsed = false });
         await db.SaveChangesAsync();
     }
     public async Task<TokenResponseDto> VerifyOtpAsync(OTPVerifyDto dto, string ipAddress)

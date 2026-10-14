@@ -15,6 +15,10 @@ public sealed class SmtpOptions
     public int Port { get; set; } = 587;
     public string SenderName { get; set; } = "QR Menü";
     public string SenderEmail { get; set; } = "";
+    public bool SaveSentCopy { get; set; }
+    public string ImapServer { get; set; } = "";
+    public int ImapPort { get; set; } = 993;
+    public string SentFolder { get; set; } = "";
     public string Password { get; set; } = "";
 }
 public sealed class StorageOptions
