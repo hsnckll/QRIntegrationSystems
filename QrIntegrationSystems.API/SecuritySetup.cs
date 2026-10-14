@@ -1,3 +1,4 @@
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.Globalization;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -13,13 +14,14 @@ public static class SecuritySetup
 {
     public static void ConfigureJwt(JwtBearerOptions options, IConfiguration configuration)
     {
-        var secret = configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT anahtarı gerekli.");
+        var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var secret = jwt.SecretKey;
         if (secret.Length < 32) throw new InvalidOperationException("JWT anahtarı en az 32 karakter olmalı.");
         options.RequireHttpsMetadata = true;
         options.TokenValidationParameters = new TokenValidationParameters {
             ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-            ValidateIssuer = true, ValidIssuer = configuration["JwtSettings:Issuer"],
-            ValidateAudience = true, ValidAudience = configuration["JwtSettings:Audience"],
+            ValidateIssuer = true, ValidIssuer = jwt.Issuer,
+            ValidateAudience = true, ValidAudience = jwt.Audience,
             ValidateLifetime = true, RequireExpirationTime = true, ClockSkew = TimeSpan.Zero
         };
         options.Events = new JwtBearerEvents { OnTokenValidated = async context => {

@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 
 namespace QrIntegrationSystems.Infrastructure.Services;
 
@@ -9,7 +10,7 @@ public sealed class AuthSessionStore
     private readonly string root;
     private readonly object gate = new();
     private readonly SemaphoreSlim[] locks = Enumerable.Range(0, 1024).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
-    public AuthSessionStore(IConfiguration config) => root = Path.GetFullPath(config["Storage:AuthPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "storage", "auth"));
+    public AuthSessionStore(IOptions<StorageOptions> options) => root = Path.GetFullPath(options.Value.AuthPath);
     public async Task<IDisposable> AcquireAsync(string key)
     {
         var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key));

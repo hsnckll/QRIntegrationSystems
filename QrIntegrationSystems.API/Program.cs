@@ -1,19 +1,23 @@
+using QrIntegrationSystems.Infrastructure.Configuration;
 using QrIntegrationSystems.API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QrIntegrationSystems.API.Middlewares;
 using QrIntegrationSystems.Application.Interfaces;
-using QrIntegrationSystems.Domain.Entities;
 using QrIntegrationSystems.Infrastructure.Data;
 using QrIntegrationSystems.Infrastructure.Services;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddBackendOptions(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IBusinessScopeResolver, BusinessScopeResolver>();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString)) throw new InvalidOperationException("ConnectionStrings:DefaultConnection gerekli. Development için API projesinin User Secrets ayarlarını kontrol edin.");
+var appOptions = builder.Configuration.GetSection(AppOptions.SectionName).Get<AppOptions>() ?? new AppOptions();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(connectionString,
         b => b.MigrationsAssembly("QrIntegrationSystems.Infrastructure")));
 
 // Servis Kayıtları
@@ -28,16 +32,12 @@ builder.Services.AddSingleton<TemplatePackageStore>();
 builder.Services.AddSingleton<AuthSessionStore>();
 builder.Services.AddQrRateLimits();
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => o.MultipartBodyLengthLimit = 36 * 1024 * 1024);
-builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o => { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; foreach(var proxy in builder.Configuration.GetSection("AppSettings:TrustedProxies").Get<string[]>() ?? []) o.KnownProxies.Add(System.Net.IPAddress.Parse(proxy)); });
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o => { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; foreach (var proxy in appOptions.TrustedProxies) o.KnownProxies.Add(System.Net.IPAddress.Parse(proxy)); });
 
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IEmailService, EmailService>(); // <-- E-posta Servisi Eklendi
-
-var jwtConfig = builder.Configuration.GetSection("JwtSettings");
-var secret = jwtConfig["SecretKey"] ?? throw new InvalidOperationException("JwtSettings:SecretKey gerekli.");
-if (secret.Length < 32) throw new InvalidOperationException("JWT anahtarı en az 32 karakter olmalı.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => SecuritySetup.ConfigureJwt(options, builder.Configuration));
@@ -46,7 +46,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins(builder.Configuration.GetSection("AppSettings:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5177", "http://127.0.0.1:5177"])
+        policy.WithOrigins(appOptions.AllowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

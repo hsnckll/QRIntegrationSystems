@@ -14,23 +14,17 @@ public sealed class AuthController(IAuthService auth, AuthSessionStore sessions)
     [HttpPost("admin-login")]
     public async Task<IActionResult> AdminLogin(AdminLoginDto dto)
     {
-        try { return Ok(await auth.AdminLoginAsync(dto, ClientIp())); }
-        catch (AuthRateLimitException ex) { return Limited(ex); }
-        catch (Exception ex) { return ApiErrors.FromException(this, ex); }
+        return Ok(await auth.AdminLoginAsync(dto, ClientIp()));
     }
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp(LoginRequestDto dto)
     {
-        try { await auth.SendOtpAsync(dto, ClientIp()); return Ok(new { message = "E-posta kayıtlı ve aktif bir işletmeye aitse doğrulama kodu gönderildi." }); }
-        catch (AuthRateLimitException ex) { return Limited(ex); }
-        catch (Exception ex) { return ApiErrors.FromException(this, ex); }
+        await auth.SendOtpAsync(dto, ClientIp()); return Ok(new { message = "E-posta kayıtlı ve aktif bir işletmeye aitse doğrulama kodu gönderildi." });
     }
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp(OTPVerifyDto dto)
     {
-        try { return Ok(await auth.VerifyOtpAsync(dto, ClientIp())); }
-        catch (AuthRateLimitException ex) { return Limited(ex); }
-        catch (Exception ex) { return ApiErrors.FromException(this, ex); }
+        return Ok(await auth.VerifyOtpAsync(dto, ClientIp()));
     }
     [Authorize, HttpPost("logout")]
     public IActionResult Logout()
@@ -40,9 +34,5 @@ public sealed class AuthController(IAuthService auth, AuthSessionStore sessions)
         return NoContent();
     }
     private string ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    private IActionResult Limited(AuthRateLimitException ex)
-    {
-        Response.Headers.RetryAfter = ex.RetryAfterSeconds.ToString();
-        return StatusCode(429, new { code = "IP_LOCKED", retryAfterSeconds = ex.RetryAfterSeconds, message = ex.Message });
-    }
+
 }

@@ -24,15 +24,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var templates = await _templateService.GetAllAsync();
-                return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.IsPublished).ToList());
-            }
-            catch (Exception ex)
-            {
-                return ApiErrors.FromException(this, ex);
-            }
+            var templates = await _templateService.GetAllAsync();
+            return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.IsPublished).ToList());
         }
 
         // ─────────────────────────────────────────
@@ -43,15 +36,8 @@ namespace QrIntegrationSystems.API.Controllers
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] TemplateCreateDto dto)
         {
-            try
-            {
-                var template = await _templateService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetAll), new { id = template.Id }, template);
-            }
-            catch (Exception ex)
-            {
-                return ApiErrors.FromException(this, ex);
-            }
+            var template = await _templateService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetAll), new { id = template.Id }, template);
         }
 
         // ─────────────────────────────────────────
@@ -62,15 +48,8 @@ namespace QrIntegrationSystems.API.Controllers
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                await _templateService.DeleteAsync(id);
-                return Ok(new { message = "Şablon başarıyla silindi." });
-            }
-            catch (Exception ex)
-            {
-                return ApiErrors.FromException(this, ex);
-            }
+            await _templateService.DeleteAsync(id);
+            return Ok(new { message = "Şablon başarıyla silindi." });
         }
     }
 }

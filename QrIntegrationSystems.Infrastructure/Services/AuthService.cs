@@ -1,10 +1,11 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using QrIntegrationSystems.Application.DTOs.Auth;
 using QrIntegrationSystems.Application.Interfaces;
@@ -13,8 +14,9 @@ using QrIntegrationSystems.Infrastructure.Data;
 
 namespace QrIntegrationSystems.Infrastructure.Services;
 
-public sealed class AuthService(AppDbContext db, IConfiguration config, IEmailService email, AuthSessionStore sessions) : IAuthService
+public sealed class AuthService(AppDbContext db, IOptions<JwtOptions> options, IEmailService email, AuthSessionStore sessions) : IAuthService
 {
+    private readonly JwtOptions jwt = options.Value;
     private static string Normalize(string value) => value.Trim().ToLowerInvariant();
     public async Task<TokenResponseDto> AdminLoginAsync(AdminLoginDto dto, string ipAddress = "unknown")
     {
@@ -64,7 +66,7 @@ public sealed class AuthService(AppDbContext db, IConfiguration config, IEmailSe
         record.IsUsed = true; await Reset(address, ipAddress); await Reset(address, "business-account"); await db.SaveChangesAsync();
         return Token(business.Email, "Business", business.Id);
     }
-    private string Digest(string address, string code) => "v1:" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(config["JwtSettings:SecretKey"]!), Encoding.UTF8.GetBytes(address + ":" + code)));
+    private string Digest(string address, string code) => "v1:" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(jwt.SecretKey), Encoding.UTF8.GetBytes(address + ":" + code)));
     private async Task CheckLockout(string address, string ip)
     {
         var attempt = await db.LoginAttempts.FirstOrDefaultAsync(a => a.Email == address && a.IpAddress == ip);
@@ -88,11 +90,11 @@ public sealed class AuthService(AppDbContext db, IConfiguration config, IEmailSe
     }
     private TokenResponseDto Token(string address, string role, int? businessId)
     {
-        var expires = DateTime.UtcNow.AddMinutes(Math.Clamp(int.Parse(config["JwtSettings:ExpirationInMinutes"] ?? "60"), 5, 1440));
+        var expires = DateTime.UtcNow.AddMinutes(Math.Clamp(jwt.ExpirationInMinutes, 5, 1440));
         var claims = new List<Claim> { new(ClaimTypes.Email, address), new(ClaimTypes.Role, role), new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")) };
         if (businessId.HasValue) { claims.Add(new("BusinessId", businessId.Value.ToString())); claims.Add(new("sessionVersion", sessions.BusinessVersion(businessId.Value))); }
-        var token = new JwtSecurityToken(config["JwtSettings:Issuer"], config["JwtSettings:Audience"], claims, expires: expires,
-            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:SecretKey"]!)), SecurityAlgorithms.HmacSha256));
+        var token = new JwtSecurityToken(jwt.Issuer, jwt.Audience, claims, expires: expires,
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)), SecurityAlgorithms.HmacSha256));
         return new TokenResponseDto { Token = new JwtSecurityTokenHandler().WriteToken(token), Role = role, ExpiresAt = expires };
     }
 }

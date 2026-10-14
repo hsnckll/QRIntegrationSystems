@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Infrastructure.Data;
 using QRCoder;
@@ -12,12 +13,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class QrCodeService : IQrCodeService
     {
         private readonly AppDbContext _db;
-        private readonly IConfiguration _config;
+        private readonly AppOptions _options;
 
-        public QrCodeService(AppDbContext db, IConfiguration config)
+        public QrCodeService(AppDbContext db, IOptions<AppOptions> options)
         {
             _db = db;
-            _config = config;
+            _options = options.Value;
         }
 
         // ─────────────────────────────────────────
@@ -33,7 +34,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 throw new ValidationException("QR kod üretilecek işletme bulunamadı.");
 
             // 2. Hedef Menü URL'sini belirle
-            string baseUrl = _config["AppSettings:MenuBaseUrl"] ?? "https://{slug}.okutye.com";
+            string baseUrl = _options.MenuBaseUrl;
             string targetUrl = baseUrl.Replace("{slug}", slug.Trim().ToLower());
 
             // 3. QRCoder ile QR verisini oluştur (Yüksek hata düzeltme seviyesi: ECCLevel.Q)

@@ -1,26 +1,27 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Infrastructure.Data;
 using SkiaSharp;
 
 namespace QrIntegrationSystems.Infrastructure.Services;
 
-public sealed class FileService(AppDbContext db, IConfiguration config, AuthSessionStore sessions) : IFileService
+public sealed class FileService(AppDbContext db, IOptions<StorageOptions> options, AuthSessionStore sessions) : IFileService
 {
-    private readonly string root = Path.GetFullPath(config["Storage:UploadsPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+    private readonly string root = Path.GetFullPath(options.Value.UploadsPath);
     public async Task<string> UploadImageAsync(Stream stream, string name, string folder, int? businessId, bool isSuperAdmin = false)
     {
         if (!isSuperAdmin && businessId is not > 0) throw new UnauthorizedAccessException();
         if (businessId.HasValue && !await db.Businesses.AnyAsync(b => b.Id == businessId && !b.IsDeleted)) throw new ValidationException("İşletme bulunamadı.");
         if (!new[] { "general", "logos", "banners", "products" }.Contains(folder)) throw new ValidationException("Geçersiz görsel klasörü.");
         if (!new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(Path.GetExtension(name).ToLowerInvariant())) throw new ValidationException("JPEG, PNG veya WebP görsel seçin.");
-        if (stream.Length == 0 || stream.Length > 8 * 1024 * 1024) throw new ValidationException("Görsel 0–8 MB aralığında olmalı.");
+        if (stream.Length == 0 || stream.Length > options.Value.MaxImageBytes) throw new ValidationException("Görsel 0–8 MB aralığında olmalı.");
         using var buffer = new MemoryStream(); await stream.CopyToAsync(buffer); buffer.Position = 0;
         using var codec = SKCodec.Create(buffer);
         if (codec == null || !new[] { SKEncodedImageFormat.Jpeg, SKEncodedImageFormat.Png, SKEncodedImageFormat.Webp }.Contains(codec.EncodedFormat)
-            || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > 8192 || codec.Info.Height > 8192 || (long)codec.Info.Width * codec.Info.Height > 16_000_000)
+            || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > 8192 || codec.Info.Height > 8192 || (long)codec.Info.Width * codec.Info.Height > options.Value.MaxImagePixels)
             throw new ValidationException("Geçerli ve en fazla 16 megapiksel bir görsel seçin.");
         using var bitmap = new SKBitmap(codec.Info);
         if (codec.GetPixels(bitmap.Info, bitmap.GetPixels()) != SKCodecResult.Success) throw new ValidationException("Görsel okunamadı.");
@@ -29,7 +30,7 @@ public sealed class FileService(AppDbContext db, IConfiguration config, AuthSess
         using var held = await sessions.AcquireAsync("upload:" + owner);
         var ownerDirs = new[] { "general", "logos", "banners", "products" }.Select(f => Path.Combine(root, f, owner));
         var currentBytes = ownerDirs.Where(Directory.Exists).Sum(d => Directory.EnumerateFiles(d).Sum(f => new FileInfo(f).Length));
-        if (currentBytes + encoded.Size > 256L * 1024 * 1024) throw new ValidationException("Görsel depolama kotası doldu.");
+        if (currentBytes + encoded.Size > options.Value.BusinessImageQuotaBytes) throw new ValidationException("Görsel depolama kotası doldu.");
         var directory = Path.Combine(root, folder, owner); Directory.CreateDirectory(directory);
         var file = Guid.NewGuid().ToString("N") + ".webp";
         await File.WriteAllBytesAsync(Path.Combine(directory, file), encoded.ToArray());

@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
 using MimeKit;
 using MimeKit.Text;
 using QrIntegrationSystems.Application.Interfaces;
@@ -9,22 +10,18 @@ namespace QrIntegrationSystems.Infrastructure.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly IConfiguration _config;
+        private readonly SmtpOptions _options;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IOptions<SmtpOptions> options)
         {
-            _config = config;
+            _options = options.Value;
         }
 
         public async Task SendAsync(string toEmail, string subject, string body)
         {
-            var smtpSettings = _config.GetSection("SmtpSettings");
-            var server = smtpSettings["Server"];
+            var smtpSettings = _options;
+            var server = smtpSettings.Server;
 
-            // ─────────────────────────────────────────────────────────────
-            // AKILLI MOD: Eğer henüz hosting/mail bilgileri girilmemişse
-            // sistemi kilitleme, konsola yazdırarak geliştirmeye izin ver!
-            // ─────────────────────────────────────────────────────────────
             if (string.IsNullOrWhiteSpace(server)) throw new InvalidOperationException("SMTP sunucusu yapılandırılmalı.");
 
             // ─────────────────────────────────────────────────────────────
@@ -32,10 +29,10 @@ namespace QrIntegrationSystems.Infrastructure.Services
             // ─────────────────────────────────────────────────────────────
             try
             {
-                var port = int.Parse(smtpSettings["Port"] ?? "587");
-                var senderName = smtpSettings["SenderName"] ?? "QR Menü";
-                var senderEmail = (smtpSettings["SenderEmail"] ?? "").Trim();
-                var password = (smtpSettings["Password"] ?? "").Replace(" ", "").Trim();
+                var port = smtpSettings.Port;
+                var senderName = smtpSettings.SenderName;
+                var senderEmail = (smtpSettings.SenderEmail).Trim();
+                var password = (smtpSettings.Password).Replace(" ", "").Trim();
 
                 var email = new MimeMessage();
                 email.From.Add(new MailboxAddress(senderName, senderEmail));

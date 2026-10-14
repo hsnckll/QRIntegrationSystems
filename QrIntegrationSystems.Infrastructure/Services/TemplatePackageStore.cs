@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Options;
+using QrIntegrationSystems.Infrastructure.Configuration;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration;
 
 namespace QrIntegrationSystems.Infrastructure.Services;
 
@@ -8,7 +9,7 @@ public sealed record TemplateManifest(int SchemaVersion, string Id, string Name,
 public sealed class TemplatePackageStore
 {
     public string Root { get; }
-    public TemplatePackageStore(IConfiguration config) => Root = Path.GetFullPath(config["Storage:TemplatesPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "storage", "templates"));
+    public TemplatePackageStore(IOptions<StorageOptions> options) => Root = Path.GetFullPath(options.Value.TemplatesPath);
     public static bool ValidCode(string code) => Regex.IsMatch(code, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) && code.Length <= 80;
     public string DirectoryFor(string code)
     {
