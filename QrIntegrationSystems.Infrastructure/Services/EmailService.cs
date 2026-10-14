@@ -34,7 +34,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 var port = smtpSettings.Port;
                 var senderName = smtpSettings.SenderName;
                 var senderEmail = (smtpSettings.SenderEmail).Trim();
-                var password = (smtpSettings.Password).Replace(" ", "").Trim();
+                var password = smtpSettings.Password;
 
                 using var email = new MimeMessage();
                 email.From.Add(new MailboxAddress(senderName, senderEmail));
@@ -82,7 +82,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
             {
                 // Mail sunucusunda anlık bir aksilik çıkarsa projeyi çökertme, konsola hata bas
                 Console.WriteLine($"[SMTP HATASI]: E-posta gönderilemedi! Hata detayı: {ex.Message}");
-                throw new InvalidOperationException("E-posta gönderilemedi. Daha sonra tekrar deneyin.");
+                throw new InvalidOperationException("E-posta gönderilemedi. Daha sonra tekrar deneyin.", ex);
             }
         }
 
