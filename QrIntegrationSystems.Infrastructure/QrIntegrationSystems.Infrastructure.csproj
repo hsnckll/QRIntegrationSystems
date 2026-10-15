@@ -31,6 +31,5 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="EmailTemplates\otp-login.html" />
-    <EmbeddedResource Include="EmailTemplates\okutye-logo.png" />
   </ItemGroup>
 </Project>

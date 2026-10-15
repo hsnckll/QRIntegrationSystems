@@ -5,7 +5,6 @@ namespace QrIntegrationSystems.Infrastructure.EmailTemplates;
 
 public static class OtpEmailTemplate
 {
-    public const string LogoContentId = "okutye-logo@okutye.com.tr";
     private const string ResourcePrefix = "QrIntegrationSystems.Infrastructure.EmailTemplates.";
     private static readonly Lazy<string> HtmlTemplate = new(() =>
     {
@@ -42,8 +41,6 @@ public static class OtpEmailTemplate
             Bu e-posta otomatik olarak gönderilmiştir.
             """;
     }
-
-    public static Stream OpenLogo() => OpenResource("okutye-logo.png");
 
     private static void Validate(string code, int validityMinutes)
     {

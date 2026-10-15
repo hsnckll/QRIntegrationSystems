@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using QrIntegrationSystems.Infrastructure.Configuration;
-using QrIntegrationSystems.Infrastructure.EmailTemplates;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Net.Smtp;
@@ -45,15 +44,6 @@ namespace QrIntegrationSystems.Infrastructure.Services
                     HtmlBody = body,
                     TextBody = textBody
                 };
-                using var logoStream = body.Contains($"cid:{OtpEmailTemplate.LogoContentId}", StringComparison.Ordinal)
-                    ? OtpEmailTemplate.OpenLogo()
-                    : null;
-                if (logoStream is not null)
-                {
-                    var logo = bodyBuilder.LinkedResources.Add("okutye-logo.png", logoStream, new ContentType("image", "png"));
-                    logo.ContentId = OtpEmailTemplate.LogoContentId;
-                    logo.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
-                }
                 email.Body = bodyBuilder.ToMessageBody();
 
                 using var smtp = CreateSmtpClient();
