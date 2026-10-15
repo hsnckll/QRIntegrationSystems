@@ -16,18 +16,31 @@ public sealed class TemplatePackageStore
         if (!ValidCode(code)) throw new ArgumentException("Geçersiz şablon kodu.");
         return Path.Combine(Root, code);
     }
-    public bool Published(string code) => ValidCode(code) && File.Exists(Path.Combine(DirectoryFor(code), ".published"));
+    public bool IsAvailable(string code) => EntryUrl(code) != null;
     public TemplateManifest? Manifest(string code)
     {
-        var path = Path.Combine(DirectoryFor(code), "template.json");
-        return File.Exists(path) ? JsonSerializer.Deserialize<TemplateManifest>(File.ReadAllText(path), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) : null;
+        if (!ValidCode(code)) return null;
+        try
+        {
+            var path = Path.Combine(DirectoryFor(code), "template.json");
+            return File.Exists(path) ? JsonSerializer.Deserialize<TemplateManifest>(File.ReadAllText(path), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return null; }
     }
     public string? EntryUrl(string code)
     {
         var manifest = Manifest(code);
-        if (manifest == null) return null;
-        var capability = File.ReadAllText(Path.Combine(DirectoryFor(code), ".capability"));
-        return $"/api/template/assets/{code}/{capability}/{manifest.Entry}";
+        if (manifest == null || manifest.SchemaVersion != 1 || manifest.MenuContractVersion != 1 || manifest.Id != code) return null;
+        try
+        {
+            var entry = SafeRelative(manifest.Entry);
+            var directory = DirectoryFor(code);
+            if (!entry.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || !File.Exists(Path.Combine(directory, entry))) return null;
+            var capability = File.ReadAllText(Path.Combine(directory, ".capability"));
+            if (!Guid.TryParseExact(capability, "N", out _)) return null;
+            return $"/api/template/assets/{code}/{capability}/{entry}";
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException) { return null; }
     }
     public static string SafeRelative(string value)
     {

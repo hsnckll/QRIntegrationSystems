@@ -35,7 +35,11 @@ namespace QrIntegrationSystems.Infrastructure.Services
                     ThumbnailPath = t.ThumbnailPath  // Önizleme görseli yolu
                 })
                 .ToListAsync();
-            foreach(var item in list) { item.EntryUrl = _packages.EntryUrl(item.FolderName); item.IsPublished = _packages.Published(item.FolderName); item.Version = _packages.Manifest(item.FolderName)?.Version; }
+            foreach (var item in list)
+            {
+                item.EntryUrl = _packages.EntryUrl(item.FolderName);
+                item.Version = _packages.Manifest(item.FolderName)?.Version;
+            }
             return list;
         }
 

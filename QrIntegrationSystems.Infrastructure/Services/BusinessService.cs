@@ -98,7 +98,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             if (dto.TemplateId.HasValue && templateExists == false)
                 throw new ValidationException("Seçilen şablon bulunamadı.");
-            if(dto.TemplateId.HasValue) { var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value); if(selectedTemplate == null || !_packages.Published(selectedTemplate.FolderName)) throw new ValidationException("Seçilen şablon henüz kullanıma açılmadı."); }
+            if (dto.TemplateId.HasValue)
+            {
+                var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value);
+                if (selectedTemplate == null || !_packages.IsAvailable(selectedTemplate.FolderName))
+                    throw new ValidationException("Seçilen şablon bulunamadı veya paket dosyaları eksik.");
+            }
 
             var newBusiness = new Business
             {
@@ -173,7 +178,12 @@ namespace QrIntegrationSystems.Infrastructure.Services
 
             if (dto.TemplateId.HasValue && templateExists == false)
                 throw new ValidationException("Seçilen şablon bulunamadı.");
-            if(dto.TemplateId.HasValue) { var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value); if(selectedTemplate == null || !_packages.Published(selectedTemplate.FolderName)) throw new ValidationException("Seçilen şablon henüz kullanıma açılmadı."); }
+            if (dto.TemplateId.HasValue)
+            {
+                var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value);
+                if (selectedTemplate == null || !_packages.IsAvailable(selectedTemplate.FolderName))
+                    throw new ValidationException("Seçilen şablon bulunamadı veya paket dosyaları eksik.");
+            }
 
             business.Name = dto.Name;
             business.OwnerName = dto.OwnerName;

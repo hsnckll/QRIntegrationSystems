@@ -6,7 +6,6 @@ namespace QrIntegrationSystems.Application.DTOs.Template
     {
         public int Id { get; set; }
         public string? EntryUrl { get; set; }
-        public bool IsPublished { get; set; }
         public string? Version { get; set; }
         public string Name { get; set; } = null!;
 

@@ -25,7 +25,7 @@ namespace QrIntegrationSystems.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var templates = await _templateService.GetAllAsync();
-            return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.IsPublished).ToList());
+            return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.EntryUrl != null).ToList());
         }
 
         // ─────────────────────────────────────────

@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QrIntegrationSystems.Applic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QrIntegrationSystems.Infrastructure", "QrIntegrationSystems.Infrastructure\QrIntegrationSystems.Infrastructure.csproj", "{333F7A4A-1389-4A4E-B1AA-59459BC26C2E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QrIntegrationSystems.TemplateTests", "tests\QrIntegrationSystems.TemplateTests\QrIntegrationSystems.TemplateTests.csproj", "{2DA9072B-D42A-4B92-93AE-2171C06CA71D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,9 +37,16 @@ Global
 		{333F7A4A-1389-4A4E-B1AA-59459BC26C2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{333F7A4A-1389-4A4E-B1AA-59459BC26C2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{333F7A4A-1389-4A4E-B1AA-59459BC26C2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DA9072B-D42A-4B92-93AE-2171C06CA71D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DA9072B-D42A-4B92-93AE-2171C06CA71D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DA9072B-D42A-4B92-93AE-2171C06CA71D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DA9072B-D42A-4B92-93AE-2171C06CA71D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2DA9072B-D42A-4B92-93AE-2171C06CA71D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4A9C81D5-74EE-4CA8-9408-7315386457FA}

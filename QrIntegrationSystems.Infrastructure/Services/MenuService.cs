@@ -95,7 +95,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 LogoPath = business.LogoPath,
                 BannerPath = business.BannerPath,
                 // Frontend bu TemplateName değerine bakarak (Örn: "template-modern") hangi tasarımı çizeceğini anlar
-                TemplateName = business.Template != null && _packages.Published(business.Template.FolderName) ? business.Template.FolderName : "",
+                TemplateName = business.Template != null && _packages.IsAvailable(business.Template.FolderName) ? business.Template.FolderName : "",
                 Categories = categories
             };
         }

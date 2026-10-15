@@ -71,7 +71,7 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
                 throw new ArgumentException("Şablon manifesti v1 sözleşmesine uygun değil.");
             var entryName = TemplatePackageStore.SafeRelative(manifest.Entry);
             if (!entryName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || !seen.Contains(entryName)) throw new ArgumentException("Manifest giriş HTML dosyası bulunamadı.");
-            // Ready/menu integration is exercised in the preview before publishing; no server-side JavaScript execution.
+            // A validated installed package is immediately selectable; preview does not gate availability.
             var destination = store.DirectoryFor(manifest.Id);
             if (Directory.Exists(destination) || await db.Templates.AnyAsync(t => t.FolderName == manifest.Id, ct)) throw new ArgumentException("Bu şablon kodu zaten kullanılıyor. Yeni kod ile yükleyin.");
             await System.IO.File.WriteAllTextAsync(Path.Combine(staging, ".capability"), Guid.NewGuid().ToString("N"), ct);
@@ -81,7 +81,7 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
             db.Templates.Add(template);
             await db.SaveChangesAsync(ct);
             installed = null;
-            return Ok(new { template.Id, template.Name, template.FolderName, entryUrl = store.EntryUrl(template.FolderName), isPublished = false, version = manifest.Version });
+            return Ok(new { template.Id, template.Name, template.FolderName, entryUrl = store.EntryUrl(template.FolderName), version = manifest.Version });
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidDataException or JsonException or DbUpdateException)
         { return BadRequest(new { message = ex is DbUpdateException ? "Şablon kaydı oluşturulamadı." : ex.Message }); }
@@ -97,20 +97,12 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
     {
         if (!TemplatePackageStore.ValidCode(code)) return NotFound();
         var template = await db.Templates.AsNoTracking().SingleOrDefaultAsync(t => t.FolderName == code);
-        if (template == null || (!store.Published(code) && !User.IsInRole("SuperAdmin"))) return NotFound(new { message = "Şablon yayında değil." });
-        return Ok(new { template.Id, template.Name, entryUrl = store.EntryUrl(code), isPublished = store.Published(code) });
+        var entryUrl = store.EntryUrl(code);
+        if (template == null || entryUrl == null) return NotFound(new { message = "Şablon bulunamadı veya paket dosyaları eksik." });
+        return Ok(new { template.Id, template.Name, entryUrl });
     }
 
-    [HttpPost("{id:int}/publish"), Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> Publish(int id)
-    {
-        var template = await db.Templates.FindAsync(id);
-        if (template == null || store.Manifest(template.FolderName) == null) return NotFound();
-        await System.IO.File.WriteAllTextAsync(Path.Combine(store.DirectoryFor(template.FolderName), ".published"), DateTime.UtcNow.ToString("O"));
-        return Ok(new { message = "Şablon kullanıma açıldı." });
-    }
-
-    // A random capability permits draft preview; no tenant data or session is stored in packages.
+    // A random capability addresses installed assets; no tenant data or session is stored in packages.
     [HttpGet("assets/{code}/{capability}/{**asset}"), AllowAnonymous]
     public IActionResult Asset(string code, string capability, string asset)
     {
