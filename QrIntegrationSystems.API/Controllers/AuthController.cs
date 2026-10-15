@@ -19,7 +19,8 @@ public sealed class AuthController(IAuthService auth, AuthSessionStore sessions)
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp(LoginRequestDto dto)
     {
-        await auth.SendOtpAsync(dto, ClientIp()); return Ok(new { message = "E-posta kayıtlı ve aktif bir işletmeye aitse doğrulama kodu gönderildi." });
+        await auth.SendOtpAsync(dto, ClientIp());
+        return Ok(new { message = "Doğrulama kodu işletme e-posta adresinize gönderildi." });
     }
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp(OTPVerifyDto dto)

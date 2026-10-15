@@ -38,8 +38,8 @@ public sealed class AuthService(AppDbContext db, IOptions<JwtOptions> options, I
     {
         var address = Normalize(dto.Email); using var held = await sessions.AcquireAsync("otp:" + address);
         await CheckLockout(address, "business-account"); await CheckLockout(address, ipAddress);
-        var business = await db.Businesses.FirstOrDefaultAsync(b => b.Email.ToLower() == address && b.IsActive && !b.IsDeleted);
-        if (business == null) return; // Same public response; do not disclose account existence.
+        var business = await FindOtpBusinessAsync(address);
+        if (business == null) throw new ValidationException("Bu e-posta adresiyle işletme girişi yapılamıyor. Kayıtlı işletme e-postanızı kullanın.");
         var now = DateTime.UtcNow;
         var latest = await db.OTPCodes.Where(o => o.Email == address).OrderByDescending(o => o.CreatedAt).FirstOrDefaultAsync();
         if (latest != null && latest.CreatedAt.AddSeconds(30) > now) throw new AuthRateLimitException((int)Math.Ceiling((latest.CreatedAt.AddSeconds(30) - now).TotalSeconds));
@@ -63,11 +63,16 @@ public sealed class AuthService(AppDbContext db, IOptions<JwtOptions> options, I
             await Failure(address, ipAddress); await Failure(address, "business-account"); await CheckLockout(address, "business-account"); await CheckLockout(address, ipAddress);
             throw new ValidationException("Geçersiz veya süresi dolmuş kod.");
         }
-        var business = await db.Businesses.FirstOrDefaultAsync(b => b.Email.ToLower() == address && b.IsActive && !b.IsDeleted);
+        var business = await FindOtpBusinessAsync(address);
         if (business == null) throw new ValidationException("Geçersiz veya süresi dolmuş kod.");
         record.IsUsed = true; await Reset(address, ipAddress); await Reset(address, "business-account"); await db.SaveChangesAsync();
         return Token(business.Email, "Business", business.Id);
     }
+    // Administrator identities must never receive a Business session, even if duplicated in Businesses.
+    private Task<Business?> FindOtpBusinessAsync(string address) => db.Businesses.FirstOrDefaultAsync(b =>
+        b.Email.ToLower() == address && b.IsActive && !b.IsDeleted &&
+        !db.SuperAdmins.Any(a => a.Email.ToLower() == address));
+
     private string Digest(string address, string code) => "v1:" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(jwt.SecretKey), Encoding.UTF8.GetBytes(address + ":" + code)));
     private async Task CheckLockout(string address, string ip)
     {
