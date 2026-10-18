@@ -1,4 +1,4 @@
-import brandBanner from "../../assets/branding/okut-ye-banner.png"
+import brandBanner from "../../assets/branding/okut-ye-banner.webp"
 import { completeLogin, readSession, landingFor } from "../../shared/session"
 import React, { useState, useEffect, useRef } from "react"
 import { Brand, Icon } from "./components"
@@ -57,7 +57,16 @@ export default function Login() {
           <Brand />
         </a>
         <div className="story-content">
-          <img className="brand-banner" src={brandBanner} alt="Okut Ye — Menü cebinde, afiyet masanda" width="2172" height="724" />
+          <img
+            className="brand-banner"
+            src={brandBanner}
+            alt="Okut Ye — Menü cebinde, afiyet masanda"
+            width="2172"
+            height="724"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
           <span className="story-label">
             <i /> Menünüz, her an elinizin altında
           </span>
