@@ -89,13 +89,18 @@ namespace QrIntegrationSystems.Infrastructure.Services
             }
 
             // 5. ADIM: Müşterinin telefonuna gidecek tertemiz PublicMenuDto paketini oluştur ve dön
+            string? entryUrl = business.Template != null
+                ? _packages.EntryUrl(business.Template.FolderName)
+                : null;
+
             return new PublicMenuDto
             {
                 BusinessName = business.Name,
                 LogoPath = business.LogoPath,
                 BannerPath = business.BannerPath,
                 // Frontend bu TemplateName değerine bakarak (Örn: "template-modern") hangi tasarımı çizeceğini anlar
-                TemplateName = business.Template != null && _packages.IsAvailable(business.Template.FolderName) ? business.Template.FolderName : "",
+                TemplateName = (business.Template != null && entryUrl != null) ? business.Template.FolderName : "",
+                TemplateEntryUrl = entryUrl,
                 Categories = categories
             };
         }
