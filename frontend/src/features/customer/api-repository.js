@@ -14,6 +14,7 @@ import {
   productApi,
   uploadApi,
 } from "../../services/api/endpoints"
+import { buildPublicMenuUrl } from "../../shared/session"
 
 const dayOnly = (value) => (Boolean(value) == true ? String(value).slice(0, 10) : "")
 
@@ -48,7 +49,7 @@ export async function loadCustomerData() {
       active: profile.isActive,
       template: profile.template ? profile.template.id : null,
       templateName: profile.template ? profile.template.folderName : "",
-      qrUrl: profile.activeQRCode ? profile.activeQRCode.targetUrl : `/menu/${profile.slug}`,
+      qrUrl: buildPublicMenuUrl(profile.slug, profile.activeQRCode ? profile.activeQRCode.targetUrl : ""),
       qrImage: profile.activeQRCode ? profile.activeQRCode.qrImagePath : "",
     },
     categories: categories.map((c) => ({
