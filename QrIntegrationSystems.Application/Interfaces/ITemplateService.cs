@@ -9,5 +9,11 @@ namespace QrIntegrationSystems.Application.Interfaces
     {
         // Tüm template'leri listeler — dropdown için
         Task<List<TemplateResponseDto>> GetAllAsync();
+
+        // Yeni template oluşturur
+        Task<TemplateResponseDto> CreateAsync(TemplateCreateDto dto);
+
+        // Şablonu siler
+        Task DeleteAsync(int id);
     }
 }

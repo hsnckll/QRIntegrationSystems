@@ -24,15 +24,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetByBusinessId([FromRoute] int businessId)
         {
-            try
-            {
-                var history = await _subscriptionService.GetByBusinessIdAsync(businessId);
-                return Ok(history);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var history = await _subscriptionService.GetByBusinessIdAsync(businessId);
+            return Ok(history);
         }
 
         // ─────────────────────────────────────────
@@ -42,15 +35,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("business/{businessId}/active")]
         public async Task<IActionResult> GetActive([FromRoute] int businessId)
         {
-            try
-            {
-                var activeSubscription = await _subscriptionService.GetActiveAsync(businessId);
-                return Ok(activeSubscription);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var activeSubscription = await _subscriptionService.GetActiveAsync(businessId);
+            return Ok(activeSubscription);
         }
 
         // ─────────────────────────────────────────
@@ -60,15 +46,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPost("business/{businessId}")]
         public async Task<IActionResult> Create([FromRoute] int businessId, [FromBody] CreateSubscriptionDto dto)
         {
-            try
-            {
-                var result = await _subscriptionService.CreateAsync(businessId, dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = await _subscriptionService.CreateAsync(businessId, dto);
+            return Ok(result);
         }
 
         // ─────────────────────────────────────────
@@ -78,15 +57,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpDelete("business/{businessId}/{id}")]
         public async Task<IActionResult> Delete([FromRoute] int businessId, [FromRoute] int id)
         {
-            try
-            {
-                await _subscriptionService.DeleteAsync(businessId, id);
-                return Ok(new { message = "Abonelik kaydı başarıyla silindi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _subscriptionService.DeleteAsync(businessId, id);
+            return Ok(new { message = "Abonelik kaydı başarıyla silindi." });
         }
     }
 }

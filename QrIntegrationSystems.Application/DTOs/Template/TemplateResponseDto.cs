@@ -5,6 +5,8 @@ namespace QrIntegrationSystems.Application.DTOs.Template
     public class TemplateResponseDto
     {
         public int Id { get; set; }
+        public string? EntryUrl { get; set; }
+        public string? Version { get; set; }
         public string Name { get; set; } = null!;
 
         // Frontend bu değeri okuyarak hangi temayı render edeceğine karar verir

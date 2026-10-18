@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QrIntegrationSystems.Application.DTOs.Template;
 using QrIntegrationSystems.Application.Interfaces;
 
 namespace QrIntegrationSystems.API.Controllers
@@ -23,15 +24,32 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var templates = await _templateService.GetAllAsync();
-                return Ok(templates);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var templates = await _templateService.GetAllAsync();
+            return Ok(User.IsInRole("SuperAdmin") ? templates : templates.Where(t => t.EntryUrl != null).ToList());
+        }
+
+        // ─────────────────────────────────────────
+        // YENİ ŞABLON OLUŞTUR (SuperAdmin)
+        // POST /api/template
+        // ─────────────────────────────────────────
+        [HttpPost]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> Create([FromBody] TemplateCreateDto dto)
+        {
+            var template = await _templateService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetAll), new { id = template.Id }, template);
+        }
+
+        // ─────────────────────────────────────────
+        // ŞABLON SİL (SuperAdmin)
+        // DELETE /api/template/{id}
+        // ─────────────────────────────────────────
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _templateService.DeleteAsync(id);
+            return Ok(new { message = "Şablon başarıyla silindi." });
         }
     }
 }

@@ -1,19 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QrIntegrationSystems.Application.DTOs.Category;
 using QrIntegrationSystems.Application.Interfaces;
 
 namespace QrIntegrationSystems.API.Controllers
 {
-    [Authorize(Roles = "Business")] // Sadece Business rolüne sahip giriş yapmış kişiler bu kapıyı çalabilir!
+    [Authorize(Roles = "SuperAdmin,Business")] // Sadece Business rolüne sahip giriş yapmış kişiler bu kapıyı çalabilir!
     [ApiController]
     [Route("api/[controller]")]     // Adres: /api/category
     public class CategoryController : ControllerBase
     {
+        private readonly IBusinessScopeResolver _scope;
         private readonly ICategoryService _categoryService;
 
-        public CategoryController(ICategoryService categoryService)
+        public CategoryController(ICategoryService categoryService, IBusinessScopeResolver scope)
         {
+            _scope = scope;
             _categoryService = categoryService;
         }
 
@@ -24,16 +26,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var categories = await _categoryService.GetAllAsync(businessId);
-                return Ok(categories);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            var categories = await _categoryService.GetAllAsync(businessId);
+            return Ok(categories);
         }
 
         // ─────────────────────────────────────────
@@ -43,16 +38,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var category = await _categoryService.GetByIdAsync(businessId, id);
-                return Ok(category);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            var category = await _categoryService.GetByIdAsync(businessId, id);
+            return Ok(category);
         }
 
         // ─────────────────────────────────────────
@@ -62,16 +50,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var result = await _categoryService.CreateAsync(businessId, dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            var result = await _categoryService.CreateAsync(businessId, dto);
+            return Ok(result);
         }
 
         // ─────────────────────────────────────────
@@ -81,16 +62,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCategoryDto dto)
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var result = await _categoryService.UpdateAsync(businessId, id, dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            var result = await _categoryService.UpdateAsync(businessId, id, dto);
+            return Ok(result);
         }
 
         // ─────────────────────────────────────────
@@ -100,16 +74,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                await _categoryService.DeleteAsync(businessId, id);
-                return Ok(new { message = "Kategori ve bağlı ürünler başarıyla silindi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            await _categoryService.DeleteAsync(businessId, id);
+            return Ok(new { message = "Kategori ve bağlı ürünler başarıyla silindi." });
         }
 
         // ─────────────────────────────────────────
@@ -119,31 +86,10 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPatch("{id}/toggle-active")]
         public async Task<IActionResult> ToggleActive([FromRoute] int id)
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                await _categoryService.ToggleActiveAsync(businessId, id);
-                return Ok(new { message = "Kategori aktiflik durumu güncellendi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.ResolveSelectedBusiness();
+            await _categoryService.ToggleActiveAsync(businessId, id);
+            return Ok(new { message = "Kategori aktiflik durumu güncellendi." });
         }
 
-        // ─────────────────────────────────────────
-        // YARDIMCI METOT: JWT Token'dan BusinessId'yi Güvenli Şekilde Okur
-        // ─────────────────────────────────────────
-        private int GetCurrentBusinessId()
-        {
-            var claim = User.Claims.FirstOrDefault(c => c.Type == "BusinessId");
-
-            if (claim == null || int.TryParse(claim.Value, out int businessId) == false)
-            {
-                throw new UnauthorizedAccessException("Oturum bilgileriniz doğrulanamadı.");
-            }
-
-            return businessId;
-        }
     }
 }

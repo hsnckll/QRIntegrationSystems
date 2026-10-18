@@ -25,5 +25,6 @@ namespace QrIntegrationSystems.Application.DTOs.Business
         public TemplateResponseDto? Template { get; set; }
         public QRCodeResponseDto? ActiveQRCode { get; set; }
         public SubscriptionResponseDto? ActiveSubscription { get; set; }
+        public SubscriptionResponseDto? LatestSubscription { get; set; }
     }
 }

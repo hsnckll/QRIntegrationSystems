@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Business;
 using QrIntegrationSystems.Application.DTOs.QRCode;
@@ -12,10 +13,14 @@ namespace QrIntegrationSystems.Infrastructure.Services
     public class BusinessService : IBusinessService
     {
         private readonly AppDbContext _db;
+        private readonly TemplatePackageStore _packages;
+        private readonly AuthSessionStore _sessions;
 
-        public BusinessService(AppDbContext db)
+        public BusinessService(AppDbContext db, TemplatePackageStore packages, AuthSessionStore sessions)
         {
             _db = db;
+            _packages = packages;
+            _sessions = sessions;
         }
 
         // ─────────────────────────────────────────
@@ -52,9 +57,17 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
             return MapToDetailDto(business);
+        }
+
+        public async Task<List<BusinessDetailDto>> GetAllDetailsAsync()
+        {
+            var list = await _db.Businesses.AsNoTracking().Where(b => !b.IsDeleted)
+                .Include(b => b.Template).Include(b => b.QRCodes).Include(b => b.Subscriptions).AsSplitQuery()
+                .OrderByDescending(b => b.CreatedAt).ThenBy(b => b.Id).ToListAsync();
+            return list.Select(MapToDetailDto).ToList();
         }
 
         // ─────────────────────────────────────────
@@ -70,27 +83,33 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .AnyAsync(b => b.Slug == cleanSlug && b.IsDeleted == false);
 
             if (slugExists == true)
-                throw new Exception("Bu slug (subdomain) zaten kullanılıyor. Lütfen başka bir slug belirleyin.");
+                throw new ValidationException("Bu slug (subdomain) zaten kullanılıyor. Lütfen başka bir slug belirleyin.");
 
             // Email kontrolü
             bool emailExists = await _db.Businesses
-                .AnyAsync(b => b.Email == dto.Email && b.IsDeleted == false);
+                .AnyAsync(b => b.Email.ToLower() == dto.Email.Trim().ToLower() && b.IsDeleted == false);
 
             if (emailExists == true)
-                throw new Exception("Bu e-posta adresi zaten kayıtlı.");
+                throw new ValidationException("Bu e-posta adresi zaten kayıtlı.");
 
             // Template kontrolü
             bool templateExists = await _db.Templates
                 .AnyAsync(t => t.Id == dto.TemplateId);
 
-            if (templateExists == false)
-                throw new Exception("Seçilen şablon bulunamadı.");
+            if (dto.TemplateId.HasValue && templateExists == false)
+                throw new ValidationException("Seçilen şablon bulunamadı.");
+            if (dto.TemplateId.HasValue)
+            {
+                var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value);
+                if (selectedTemplate == null || !_packages.IsAvailable(selectedTemplate.FolderName))
+                    throw new ValidationException("Seçilen şablon bulunamadı veya paket dosyaları eksik.");
+            }
 
             var newBusiness = new Business
             {
                 Name = dto.Name,
                 Slug = cleanSlug, // Sizin belirlediğiniz slug
-                Email = dto.Email,
+                Email = dto.Email.Trim().ToLowerInvariant(),
                 OwnerName = dto.OwnerName,
                 Phone = dto.Phone,
                 Address = dto.Address,
@@ -151,14 +170,20 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
             // Template kontrolü
             bool templateExists = await _db.Templates
                 .AnyAsync(t => t.Id == dto.TemplateId);
 
-            if (templateExists == false)
-                throw new Exception("Seçilen şablon bulunamadı.");
+            if (dto.TemplateId.HasValue && templateExists == false)
+                throw new ValidationException("Seçilen şablon bulunamadı.");
+            if (dto.TemplateId.HasValue)
+            {
+                var selectedTemplate = await _db.Templates.FindAsync(dto.TemplateId.Value);
+                if (selectedTemplate == null || !_packages.IsAvailable(selectedTemplate.FolderName))
+                    throw new ValidationException("Seçilen şablon bulunamadı veya paket dosyaları eksik.");
+            }
 
             business.Name = dto.Name;
             business.OwnerName = dto.OwnerName;
@@ -181,8 +206,9 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("Silinecek işletme bulunamadı.");
+                throw new ValidationException("Silinecek işletme bulunamadı.");
 
+            _sessions.RevokeBusiness(id);
             business.IsDeleted = true;
             business.DeletedAt = DateTime.UtcNow;
 
@@ -198,8 +224,9 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
+            _sessions.RevokeBusiness(id);
             business.IsActive = (business.IsActive == false);
             business.UpdatedAt = DateTime.UtcNow;
 
@@ -215,7 +242,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
             business.LogoPath = logoPath;
             business.UpdatedAt = DateTime.UtcNow;
@@ -232,7 +259,7 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
 
             if (business == null)
-                throw new Exception("İşletme bulunamadı.");
+                throw new ValidationException("İşletme bulunamadı.");
 
             business.BannerPath = bannerPath;
             business.UpdatedAt = DateTime.UtcNow;
@@ -318,7 +345,9 @@ namespace QrIntegrationSystems.Infrastructure.Services
                     PaymentMethod = activeSub.PaymentMethod,
                     Note = activeSub.Note,
                     CreatedAt = activeSub.CreatedAt
-                }
+                },
+                LatestSubscription = b.Subscriptions.Where(s => !s.IsDeleted).OrderByDescending(s => s.EndDate)
+                    .Select(s => new SubscriptionResponseDto { Id = s.Id, StartDate = s.StartDate, EndDate = s.EndDate, AmountPaid = s.AmountPaid, PaymentMethod = s.PaymentMethod, Note = s.Note, CreatedAt = s.CreatedAt }).FirstOrDefault()
             };
         }
     }

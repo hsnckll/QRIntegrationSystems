@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using QrIntegrationSystems.Application.Interfaces;
 
 namespace QrIntegrationSystems.API.Controllers
@@ -18,7 +19,7 @@ namespace QrIntegrationSystems.API.Controllers
         // QR OKUTULDUĞUNDA AÇILAN PUBLİC MENÜ
         // GET /api/menu/{slug} (Örn: /api/menu/doydoy)
         // ─────────────────────────────────────────
-        [HttpGet("{slug}")]
+        [HttpGet("{slug}"), EnableRateLimiting("public-menu")]
         public async Task<IActionResult> GetMenuBySlug([FromRoute] string slug)
         {
             // Slug boş mu kontrolü

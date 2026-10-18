@@ -1,58 +1,48 @@
-using System.Net;
-using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using QrIntegrationSystems.Application.DTOs.Auth;
 
-namespace QrIntegrationSystems.API.Middlewares
+namespace QrIntegrationSystems.API.Middlewares;
+
+public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
 {
-    // Bu sınıf, gelen her HTTP isteğini izleyen güvenlik ağıdır
-    public class ExceptionMiddleware
+    public async Task InvokeAsync(HttpContext context)
     {
-        private readonly RequestDelegate _next; // Boru hattındaki bir sonraki middleware/controller
-        private readonly ILogger<ExceptionMiddleware> _logger;
-
-        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+        try { await next(context); }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
+        catch (Exception ex)
         {
-            _next = next;
-            _logger = logger;
-        }
-
-        // İstek geldiğinde otomatik çalışan metot
-        public async Task InvokeAsync(HttpContext context)
-        {
-            try
+            if (context.Response.HasStarted) throw;
+            context.Response.Clear();
+            switch (ex)
             {
-                // İstek yoluna devam etsin (Controller'a gitsin)
-                await _next(context);
+                case AuthRateLimitException limited:
+                    context.Response.StatusCode = 429;
+                    context.Response.Headers.RetryAfter = limited.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+                    await context.Response.WriteAsJsonAsync(new { code = "IP_LOCKED", retryAfterSeconds = limited.RetryAfterSeconds, message = limited.Message });
+                    break;
+                case UnauthorizedAccessException:
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsJsonAsync(new { message = "Bu işlem için yetkiniz bulunmuyor." });
+                    break;
+                case ValidationException:
+                    context.Response.StatusCode = 400;
+                    await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+                    break;
+                case KeyNotFoundException:
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsJsonAsync(new { message = "Kayıt bulunamadı." });
+                    break;
+                case BadHttpRequestException badRequest:
+                    context.Response.StatusCode = badRequest.StatusCode;
+                    await context.Response.WriteAsJsonAsync(new { message = "Geçersiz istek." });
+                    break;
+                default:
+                    logger.LogError(ex, "Request failed {TraceId}", context.TraceIdentifier);
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsJsonAsync(new { message = "İşlem tamamlanamadı. Daha sonra tekrar deneyin.", correlationId = context.TraceIdentifier });
+                    break;
             }
-            catch (Exception ex)
-            {
-                // Eğer Controller'da veya Servislerde beklenmedik bir hata fırlatılırsa burası yakalar!
-                _logger.LogError(ex, $"[HATA YAKALANDI]: {ex.Message}");
-                await HandleExceptionAsync(context, ex);
-            }
-        }
-
-        // Hata olduğunda React'e döneceğimiz temiz JSON paketi
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-        {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError; // 500
-
-            var response = new
-            {
-                success = false,
-                statusCode = context.Response.StatusCode,
-                message = "Sunucuda beklenmeyen bir hata oluştu.",
-                // Geliştirme aşamasında hatanın asıl nedenini görebilmek için:
-                detail = exception.Message 
-            };
-
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase // React için küçük harfle başlasın (success, statusCode)
-            };
-
-            var jsonResponse = JsonSerializer.Serialize(response, jsonOptions);
-            return context.Response.WriteAsync(jsonResponse);
         }
     }
 }

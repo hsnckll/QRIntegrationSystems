@@ -9,13 +9,17 @@ namespace QrIntegrationSystems.API.Controllers
     [Route("api/[controller]")] // Adres: /api/business
     public class BusinessController : ControllerBase
     {
+        private readonly IBusinessScopeResolver _scope;
         private readonly IBusinessService _businessService;
         private readonly IQrCodeService _qrCodeService;
+        private readonly IFileService _files;
 
-        public BusinessController(IBusinessService businessService, IQrCodeService qrCodeService)
+        public BusinessController(IBusinessService businessService, IQrCodeService qrCodeService, IFileService files, IBusinessScopeResolver scope)
         {
+            _scope = scope;
             _businessService = businessService;
             _qrCodeService = qrCodeService;
+            _files = files;
         }
 
         // ─────────────────────────────────────────
@@ -26,15 +30,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var businesses = await _businessService.GetAllAsync();
-                return Ok(businesses);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var businesses = await _businessService.GetAllAsync();
+            return Ok(businesses);
         }
 
         // ─────────────────────────────────────────
@@ -45,15 +42,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            try
-            {
-                var business = await _businessService.GetByIdAsync(id);
-                return Ok(business);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
+            var business = await _businessService.GetByIdAsync(id);
+            return Ok(business);
         }
 
         // ─────────────────────────────────────────
@@ -64,16 +54,9 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var business = await _businessService.GetByIdAsync(businessId);
-                return Ok(business);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.OwnBusinessId();
+            var business = await _businessService.GetByIdAsync(businessId);
+            return Ok(business);
         }
 
         // ─────────────────────────────────────────
@@ -84,22 +67,15 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateBusinessDto dto)
         {
-            try
-            {
-                // 1. İşletmeyi kaydet
-                var newBusiness = await _businessService.CreateAsync(dto);
+            // 1. İşletmeyi kaydet
+            var newBusiness = await _businessService.CreateAsync(dto);
 
-                // 2. İşletme oluşur oluşmaz otomatik olarak ilk QR kodunu üret ve kaydet!
-                await _qrCodeService.GenerateAsync(newBusiness.Id, newBusiness.Slug);
+            // 2. İşletme oluşur oluşmaz otomatik olarak ilk QR kodunu üret ve kaydet!
+            await _qrCodeService.GenerateAsync(newBusiness.Id, newBusiness.Slug);
 
-                // Güncel QR koduyla birlikte işletmenin detayını dön
-                var finalDetail = await _businessService.GetByIdAsync(newBusiness.Id);
-                return Ok(finalDetail);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            // Güncel QR koduyla birlikte işletmenin detayını dön
+            var finalDetail = await _businessService.GetByIdAsync(newBusiness.Id);
+            return Ok(finalDetail);
         }
 
         // ─────────────────────────────────────────
@@ -110,18 +86,11 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateBusinessDto dto)
         {
-            try
-            {
-                // Güvenlik: Eğer giriş yapan bir işletmeyse, başkasının işletmesini güncelleyemez!
-                ValidateBusinessOwnership(id);
+            // Güvenlik: Eğer giriş yapan bir işletmeyse, başkasının işletmesini güncelleyemez!
+            _scope.EnsureAccess(id);
 
-                var result = await _businessService.UpdateAsync(id, dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = await _businessService.UpdateAsync(id, dto);
+            return Ok(result);
         }
 
         // ─────────────────────────────────────────
@@ -132,15 +101,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            try
-            {
-                await _businessService.DeleteAsync(id);
-                return Ok(new { message = "İşletme başarıyla silindi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _businessService.DeleteAsync(id);
+            return Ok(new { message = "İşletme başarıyla silindi." });
         }
 
         // ─────────────────────────────────────────
@@ -151,15 +113,8 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPatch("{id}/toggle-active")]
         public async Task<IActionResult> ToggleActive([FromRoute] int id)
         {
-            try
-            {
-                await _businessService.ToggleActiveAsync(id);
-                return Ok(new { message = "İşletmenin aktiflik durumu güncellendi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _businessService.ToggleActiveAsync(id);
+            return Ok(new { message = "İşletmenin aktiflik durumu güncellendi." });
         }
 
         // ─────────────────────────────────────────
@@ -170,16 +125,10 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPatch("{id}/logo")]
         public async Task<IActionResult> UpdateLogo([FromRoute] int id, [FromBody] UpdateImageRequest request)
         {
-            try
-            {
-                ValidateBusinessOwnership(id);
-                await _businessService.UpdateLogoAsync(id, request.ImagePath);
-                return Ok(new { message = "Logo başarıyla güncellendi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            _scope.EnsureAccess(id);
+            await _files.EnsureImageAccessAsync(request.ImagePath, id, User.IsInRole("SuperAdmin"));
+            await _businessService.UpdateLogoAsync(id, request.ImagePath);
+            return Ok(new { message = "Logo başarıyla güncellendi." });
         }
 
         // ─────────────────────────────────────────
@@ -190,16 +139,10 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpPatch("{id}/banner")]
         public async Task<IActionResult> UpdateBanner([FromRoute] int id, [FromBody] UpdateImageRequest request)
         {
-            try
-            {
-                ValidateBusinessOwnership(id);
-                await _businessService.UpdateBannerAsync(id, request.ImagePath);
-                return Ok(new { message = "Banner başarıyla güncellendi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            _scope.EnsureAccess(id);
+            await _files.EnsureImageAccessAsync(request.ImagePath, id, User.IsInRole("SuperAdmin"));
+            await _businessService.UpdateBannerAsync(id, request.ImagePath);
+            return Ok(new { message = "Banner başarıyla güncellendi." });
         }
 
         // ─────────────────────────────────────────
@@ -210,44 +153,29 @@ namespace QrIntegrationSystems.API.Controllers
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics()
         {
-            try
-            {
-                int businessId = GetCurrentBusinessId();
-                var stats = await _businessService.GetStatisticsAsync(businessId);
-                return Ok(stats);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            int businessId = _scope.OwnBusinessId();
+            var stats = await _businessService.GetStatisticsAsync(businessId);
+            return Ok(stats);
         }
 
         // ─────────────────────────────────────────
-        // GÜVENLİK YARDIMCILARI
+        // 11. QR KODU YENİDEN ÜRET (SuperAdmin)
+        // POST /api/business/{id}/regenerate-qr
         // ─────────────────────────────────────────
-        private int GetCurrentBusinessId()
+        [Authorize(Roles = "SuperAdmin")]
+        [HttpPost("{id}/regenerate-qr")]
+        public async Task<IActionResult> RegenerateQr([FromRoute] int id)
         {
-            var claim = User.Claims.FirstOrDefault(c => c.Type == "BusinessId");
-            if (claim == null || int.TryParse(claim.Value, out int businessId) == false)
+            var business = await _businessService.GetByIdAsync(id);
+            if (business == null)
             {
-                throw new UnauthorizedAccessException("Oturum bilgileriniz doğrulanamadı.");
+                return NotFound(new { message = "İşletme bulunamadı." });
             }
-            return businessId;
+
+            var qrPath = await _qrCodeService.GenerateAsync(id, business.Slug);
+            return Ok(new { message = "QR kod başarıyla yeniden üretildi.", qrImagePath = qrPath });
         }
 
-        private void ValidateBusinessOwnership(int targetBusinessId)
-        {
-            // Eğer giriş yapan SuperAdmin ise her işletmeye erişebilir
-            if (User.IsInRole("SuperAdmin") == true)
-                return;
-
-            // Eğer Business ise sadece kendi BusinessId'sine işlem yapabilir
-            int currentBusinessId = GetCurrentBusinessId();
-            if (currentBusinessId != targetBusinessId)
-            {
-                throw new UnauthorizedAccessException("Başka bir işletmenin bilgilerini düzenleyemezsiniz.");
-            }
-        }
     }
 
     public class UpdateImageRequest
