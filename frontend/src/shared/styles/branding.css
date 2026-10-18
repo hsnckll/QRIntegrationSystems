@@ -1,0 +1,16 @@
+:root{--blue:#0756cf;--brand-gold:#dda52c;--brand-gold-soft:#fff5dc}
+.platform-brand{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;text-align:left}
+.platform-brand img{display:block;width:174px;height:auto;max-width:100%;object-fit:contain}
+.platform-brand>span{font-size:11px;font-weight:500;letter-spacing:.1px;color:#69758a;padding-left:12px}
+.sidebar a.brand{display:block;padding:0 0 22px;transform:none}
+.sidebar .platform-brand{border-bottom:2px solid var(--brand-gold);padding-bottom:14px}
+.brand-banner{display:block;width:100%;height:auto;border-radius:12px;border:1px solid #e3e9f2;margin:0 0 26px}
+.auth-app .story-panel{background:#f2f6fc;border-right:1px solid #e3e9f2}
+.auth-app .story-label i{background:var(--brand-gold)}
+.auth-app .story-content h2{color:#14243f}
+.auth-app .story-panel>.platform-brand,.auth-app .story-panel>a{max-width:210px}
+.auth-app .story-features svg{color:#946b12}
+.auth-app .environment{border-color:#ecd9a8;background:var(--brand-gold-soft);color:#705015}
+.auth-app .primary:hover:not(:disabled){background:#0647ab}
+.panel-loading .sidebar>.platform-brand{margin-bottom:12px}
+@media(max-width:800px){.auth-app .platform-brand img{width:145px}.auth-app .platform-brand>span{font-size:9px;padding-left:10px}}
