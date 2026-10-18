@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { menuApi } from "../services/api/endpoints"
 import MenuRenderer from "../templates/MenuRenderer"
 import ErrorBoundary from "../shared/ErrorBoundary"
+import { getSubdomainSlug } from "../shared/session"
 
 import "../shared/styles/dashboard.css"
 
@@ -22,13 +23,10 @@ function MenuApp() {
          return
       }
 
-      const rootDomain = import.meta.env.VITE_ROOT_DOMAIN || "okutye.com"
-      const hostname = location.hostname
-      const sub = hostname.endsWith("."+rootDomain) ? hostname.slice(0,-rootDomain.length-1) : ""
-      const slug = params.get("slug") || (sub && !sub.includes(".") && sub!=="www" ? sub : "")
+      const slug = params.get("slug") || getSubdomainSlug()
 
       try {
-        if(!slug)throw new Error("İşletme menü adresi bulunamadı.")
+        if (Boolean(slug) == false) throw new Error("İşletme menü adresi bulunamadı.")
         setLoading(true)
         const data = await menuApi.get(slug)
         setMenu(data)

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Menu;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
@@ -98,6 +98,22 @@ namespace QrIntegrationSystems.Infrastructure.Services
                 TemplateName = business.Template != null && _packages.IsAvailable(business.Template.FolderName) ? business.Template.FolderName : "",
                 Categories = categories
             };
+        }
+
+        public async Task<bool> IsSlugActiveAsync(string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug) == true)
+            {
+                return false;
+            }
+
+            string cleanSlug = slug.Trim().ToLower();
+
+            return await _db.Businesses
+                .AsNoTracking()
+                .AnyAsync(b => b.Slug == cleanSlug
+                            && b.IsActive == true
+                            && b.IsDeleted == false);
         }
     }
 }

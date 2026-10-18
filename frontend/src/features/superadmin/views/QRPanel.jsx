@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { Icon, Button, Badge } from "../../../shared/components"
+import { buildPublicMenuUrl, getRootDomain } from "../../../shared/session"
 import { date } from "../repository"
 import Empty from "./Empty"
 
@@ -70,7 +71,12 @@ export default function QRPanel({
       <div className="qr-grid">
         {rows.map((q) => {
           const b = businesses.find((item) => item.id === q.business)
-          const localMenuUrl = Boolean(b?.slug) == true ? `/menu.html?slug=${encodeURIComponent(b.slug)}` : q.url
+          const menuUrl = buildPublicMenuUrl(b?.slug, q.url)
+          const displayUrl =
+            Boolean(b?.slug) == true &&
+            (Boolean(q.url) == false || q.url.includes("/menu.html") == true)
+              ? `https://${encodeURIComponent(b.slug.trim().toLowerCase())}.${getRootDomain()}`
+              : q.url
 
           return (
             <section className="surface qr-card" key={q.id}>
@@ -82,12 +88,12 @@ export default function QRPanel({
               <h3>{q.label}</h3>
               <a
                 className="qr-url"
-                href={isLocal == true ? localMenuUrl : q.url}
+                href={menuUrl}
                 target="_blank"
                 rel="noreferrer"
                 title={isLocal == true ? "Yerel menüyü görüntüle" : "Menü adresini aç"}
               >
-                {q.url}
+                {displayUrl}
               </a>
               {isLocal == true && (
                 <span style={{ fontSize: "11px", color: "#64748b", display: "block", marginTop: "2px", fontWeight: "500" }}>
@@ -98,7 +104,7 @@ export default function QRPanel({
               <div className="qr-actions">
                 <a
                   className="button"
-                  href={localMenuUrl}
+                  href={menuUrl}
                   target="_blank"
                   rel="noreferrer"
                   style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
@@ -117,7 +123,7 @@ export default function QRPanel({
                 <Button
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(q.url)
+                      await navigator.clipboard.writeText(displayUrl)
                       onError("QR bağlantısı kopyalandı")
                     } catch {
                       onError(
