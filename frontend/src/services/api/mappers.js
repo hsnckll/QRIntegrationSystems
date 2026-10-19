@@ -12,9 +12,10 @@ export const businessFromApi = (b) => ({
   template: b.template?.id,
   deleted: false,
 })
-// Deliberately omits email/slug; the current UpdateBusinessDto does not accept them.
+// Slug remains immutable; email is included when supplied by the profile form.
 export const businessUpdateDto = (b) => ({
   name: b.name,
+  ...(b.email == null ? {} : { email: b.email.trim().toLowerCase() }),
   ownerName: b.owner,
   phone: b.phone,
   address: b.address,

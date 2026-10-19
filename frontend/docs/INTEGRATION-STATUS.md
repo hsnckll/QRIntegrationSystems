@@ -20,7 +20,7 @@ Demo oturumunda localStorage yazımına devam edip sadece giriş endpoint'ini ba
 
 - Category/Product controller yalnızca Business rolünü ve BusinessId claim'ini kullanıyor. SuperAdmin için açık, yetkili işletme kapsamı gerekli.
 - Logo/banner ve TemplateId değişiklikleri Business rolüne açık; istenen kurala göre SuperAdmin ile sınırlandırılmalı.
-- UpdateBusinessDto e-posta/slug kabul etmiyor. UI alanları gerçek API'de kilitlenmeli veya yetkili endpoint eklenmeli.
+- UpdateBusinessDto e-posta değişikliğini kabul eder; slug sabittir. E-posta her iki panelden güncellenebilir. Adres değiştiğinde eski işletme oturumları ve bekleyen giriş kodları geçersizleşir; işletme yeni adresle yeniden giriş yapar.
 - Logs okuma ve güvenilir sunucu audit yazımı, abonelik uzatma/güncelleme, işletme restore ve silinenleri listeleme, QR listeleme/yeniden üretme/aktiflik endpoint'leri eksik.
 - İşletme paneli abonelik bilgisi için mevcut SuperAdmin-only subscription rotaları yerine güvenli Business scope gerekli.
 - Menü GET isteği QRScan ekliyor; preview/data read ile gerçek QR ziyaret ölçümü ayrılmalı.

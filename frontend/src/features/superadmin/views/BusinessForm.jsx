@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import QRCode from "qrcode"
 import { Icon, Button, Badge, Field, Thumb } from "../../../shared/components"
 import { money, date, today, currentSub, days, photoData } from "../repository"
@@ -32,14 +32,17 @@ export default function BusinessForm({
     },
   )
   const [error, setError] = useState("")
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { if (item) setX(item) }, [item])
   const set = (k, v) => setX((prev) => ({ ...prev, [k]: v }))
   const dirty = JSON.stringify(item) !== JSON.stringify(x)
 
   return (
     <section className={inline == true ? "surface form-surface" : ""}>
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
+          if (saving) return
           if (businesses.some((b) => b.id !== x.id && b.slug === x.slug)) {
             setError("Bu menü adresi başka bir işletmeye ait.")
             return
@@ -49,7 +52,8 @@ export default function BusinessForm({
             return
           }
           setError("")
-          onSave(x)
+          setSaving(true)
+          try { await onSave(x) } finally { setSaving(false) }
         }}
       >
         <div className="form-body">
@@ -65,14 +69,15 @@ export default function BusinessForm({
                 label={label}
                 value={x[k]}
                 required={k !== "phone"}
+                disabled={saving}
                 type={k === "email" ? "email" : "text"}
-                disabled={item != null && k === "email"}
                 onChange={(e) => set(k, e.target.value)}
               />
             ))}
           </div>
           <Field label="Adres">
             <textarea
+              disabled={saving}
               value={x.address}
               onChange={(e) => set("address", e.target.value)}
             />
@@ -82,13 +87,13 @@ export default function BusinessForm({
             required
             pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
             value={x.slug}
-            disabled={item != null}
+            disabled={saving || item != null}
             onChange={(e) => set("slug", e.target.value)}
             placeholder="ornek-restoran"
           />
           <p className="muted small">
             {item != null
-              ? "E-posta ve menü adresi güvenlik gereği oluşturulduktan sonra değiştirilemez."
+              ? "E-posta değiştiğinde giriş kodları yeni adrese gönderilir ve işletmenin mevcut oturumları kapatılır. Menü adresi sabittir."
               : "Küçük harf, rakam ve tire kullanın. E-posta, işletme sahibinin giriş kodunu alacağı adrestir."}
           </p>
           {Boolean(item) == false && (
@@ -197,7 +202,7 @@ export default function BusinessForm({
           {inline == true && (
             <Button
               type="button"
-              disabled={dirty == false}
+              disabled={saving || dirty == false}
               onClick={() => setX(item)}
             >
               Vazgeç
@@ -206,9 +211,9 @@ export default function BusinessForm({
           <Button
             kind="primary"
             type="submit"
-            disabled={inline == true && dirty == false}
+            disabled={saving || (inline == true && dirty == false)}
           >
-            {Boolean(item) == true ? "Bilgileri kaydet" : "İşletmeyi oluştur"}
+            {saving ? "Kaydediliyor…" : Boolean(item) == true ? "Bilgileri kaydet" : "İşletmeyi oluştur"}
           </Button>
         </div>
       </form>

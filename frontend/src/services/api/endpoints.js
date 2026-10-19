@@ -108,5 +108,4 @@ export const pendingBackendCapabilities = [
   "subscriptionUpdate",
   "businessRestore",
   "qrListGenerateToggle",
-  "customerEmailUpdate",
 ]

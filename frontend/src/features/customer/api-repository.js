@@ -145,6 +145,7 @@ export function toggleProduct(id) {
 export function updateBusinessProfile(business) {
   return businessApi.update(business.id, {
     name: business.name.trim(),
+    email: business.email.trim().toLowerCase(),
     ownerName: business.owner,
     phone: business.phone,
     address: business.address,

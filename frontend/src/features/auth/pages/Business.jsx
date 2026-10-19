@@ -8,7 +8,7 @@ export default function Business({ navigate, onSuccess }) {
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [info, setInfo] = useState(""),
+    [info, setInfo] = useState(() => new URLSearchParams(location.search).get("emailUpdated") === "1" ? "E-posta adresiniz güncellendi. Yeni e-posta adresinizle yeniden giriş yapın." : ""),
     [challenge, setChallenge] = useState(null),
     [now, setNow] = useState(Date.now())
   const codeRef = useRef(null)
@@ -109,6 +109,7 @@ export default function Business({ navigate, onSuccess }) {
           }}
         >
           <EmailField value={email} onChange={setEmail} disabled={busy == true || isLocked == true} />
+          {info && <p className="status" role="status">{info}</p>}
           {isLocked == true ? (
             <div
               style={{

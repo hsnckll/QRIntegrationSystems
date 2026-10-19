@@ -79,17 +79,17 @@ test("aborted and network failures never fall back to mock success", async () =>
     (e) => e.message.includes("iptal"),
   )
 })
-test("DTO mapping excludes fields backend does not support", () => {
+test("business DTO includes a normalized email and excludes immutable slug", () => {
   const dto = businessUpdateDto({
     name: "Doy",
     owner: "E",
-    email: "private",
+    email: "  OWNER@EXAMPLE.COM  ",
     slug: "s",
     template: 2,
     phone: "5",
     address: "M",
   })
-  assert.equal(dto.email, undefined)
+  assert.equal(dto.email, "owner@example.com")
   assert.equal(dto.slug, undefined)
   assert.equal(dto.templateId, 2)
   assert.deepEqual(

@@ -1,7 +1,8 @@
 import ProductWorkbench from "./ProductWorkbench"
+import CategoryManager from "./CategoryManager"
 import PlatformBrand from "../../shared/PlatformBrand"
 import LoadingDashboard from "../../shared/LoadingDashboard"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   Icon,
   Button,
@@ -25,7 +26,7 @@ import {
 } from "./repository"
 import { Profile, Subscription, Statistics } from "./views"
 import MenuRenderer from "../../templates/MenuRenderer"
-import { logout } from "../../shared/session"
+import { logout, clearSession, routes } from "../../shared/session"
 import useLeaveConfirmation from "../../shared/useLeaveConfirmation"
 import usePanelRoute from "../../shared/usePanelRoute"
 
@@ -73,9 +74,9 @@ export default function CustomerDashboard() {
     [modal, setModal] = useState(null),
     [toast, setToast] = useState(""),
     [profileDirty, setProfileDirty] = useState(false),
-    [manageCategories, setManageCategories] = useState(false),
     [showPreview, setShowPreview] = useState(false)
   const { confirmLeave, leaveDialog } = useLeaveConfirmation()
+  const emailChangeSaved = useRef(false)
   const [route, navigateRoute] = usePanelRoute({
     pages: nav.map(([key]) => key), defaultPage: "edit",
     beforeChange: () => !profileDirty || confirmLeave(),
@@ -137,7 +138,7 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     const f = (e) => {
-      if (profileDirty == true) {
+      if (profileDirty == true && !emailChangeSaved.current) {
         e.preventDefault()
         e.returnValue = ""
       }
@@ -193,6 +194,14 @@ export default function CustomerDashboard() {
   async function handleSaveProfile(nextData) {
     try {
       await updateBusinessProfile(nextData.business)
+      const emailChanged = nextData.business.email.trim().toLowerCase() !== data.business.email.trim().toLowerCase()
+      if (emailChanged) {
+        emailChangeSaved.current = true
+        setProfileDirty(false)
+        clearSession()
+        location.replace(`${routes.login}?emailUpdated=1#business`)
+        return true
+      }
       setToast("İşletme bilgileri güncellendi.")
       setProfileDirty(false)
       await refreshData(false)
@@ -454,120 +463,17 @@ export default function CustomerDashboard() {
                   </span>
                 </div>
               </div>
-              <div className={`editor ${showPreview ? "with-preview" : ""}`}>
-                <section
-                  className={`category-panel ${
-                    manageCategories == true ? "expanded" : ""
-                  }`}
-                >
-                  <div className="mobile-category-controls">
-                    <select
-                      aria-label="Kategori seç"
-                      value={selected}
-                      onChange={(e) => setSelected(e.target.value === "all" ? "all" : Number(e.target.value))}
-                    >
-                      <option value="all">Tüm ürünler</option>
-                      {data.categories.map((c) => (
-                        <option value={c.id} key={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      className="button"
-                      aria-expanded={manageCategories}
-                      onClick={() => setManageCategories(manageCategories == false)}
-                    >
-                      <Icon name="edit" size={16} />
-                      {manageCategories == true ? "Kapat" : "Kategorileri yönet"}
-                    </button>
-                  </div>
-                  <div className="panel-label">
-                    <h2>Kategoriler</h2>
-                    <span>{data.categories.length}</span>
-                  </div>
-                  <button
-                    className={`category all ${
-                      selected === "all" ? "current" : ""
-                    }`}
-                    onClick={() => setSelected("all")}
-                  >
-                    <Icon name="box" size={18} />
-                    <strong>Tüm ürünler</strong>
-                    <span>{data.products.length}</span>
-                  </button>
-                  <div className="category-list">
-                    {data.categories.map((c, i) => (
-                      <div
-                        className={`category-wrap ${
-                          selected === c.id ? "current" : ""
-                        }`}
-                        key={c.id}
-                      >
-                        <button
-                          className="category"
-                          onClick={() => setSelected(c.id)}
-                        >
-                          <span className="category-marker">
-                            {["◈", "◉", "◇", "▤"][i % 4]}
-                          </span>
-                          <strong>
-                            {c.name}
-                            {c.active == false && <small>Pasif</small>}
-                          </strong>
-                          <span>
-                            {
-                              data.products.filter((p) => p.category === c.id)
-                                .length
-                            }
-                          </span>
-                        </button>
-                        <div className="category-tools">
-                          <button
-                            title={`${c.name} yukarı taşı`}
-                            disabled={i === 0}
-                            onClick={() => move("categories", c.id, -1)}
-                          >
-                            <Icon name="up" size={14} /><span className="tool-label">Yukarı</span>
-                          </button>
-                          <button
-                            title={`${c.name} aşağı taşı`}
-                            disabled={i === data.categories.length - 1}
-                            onClick={() => move("categories", c.id, 1)}
-                          >
-                            <Icon name="down" size={14} /><span className="tool-label">Aşağı</span>
-                          </button>
-                          <button
-                            title={`${c.name} düzenle`}
-                            onClick={() =>
-                              setModal({ type: "category", item: c })
-                            }
-                          >
-                            <Icon name="edit" size={14} /><span className="tool-label">Düzenle</span>
-                          </button>
-                          <button
-                            title={`${c.name} sil`}
-                            onClick={() =>
-                              setModal({ type: "deleteCategory", item: c })
-                            }
-                          >
-                            <Icon name="trash" size={14} /><span className="tool-label">Sil</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    kind="category-add"
-                    icon="plus"
-                    onClick={() => setModal({ type: "category" })}
-                  >
-                    Kategori ekle
-                  </Button>
-                  <p className="category-hint">
-                    Pasif kategoriler müşteri menüsünde görünmez.
-                  </p>
-                </section>
+              <div className={`editor business-menu-editor ${showPreview ? "with-preview" : ""}`}>
+                <CategoryManager
+                  categories={data.categories}
+                  products={data.products}
+                  selected={selected}
+                  onSelect={setSelected}
+                  onCreate={() => setModal({ type: "category" })}
+                  onEdit={item => setModal({ type: "category", item })}
+                  onDelete={item => setModal({ type: "deleteCategory", item })}
+                  onMove={(id, direction) => move("categories", id, direction)}
+                />
                 <section className="product-panel">
                   <div className="product-header">
                     <div>

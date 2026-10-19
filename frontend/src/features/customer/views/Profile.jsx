@@ -3,6 +3,7 @@ import { Icon, Button, Field } from "../../../shared/components"
 
 export default function Profile({ data, commit, setDirty }) {
   const [draft, setDraft] = useState(data.business)
+  const [saving, setSaving] = useState(false)
   const dirty = JSON.stringify(draft) !== JSON.stringify(data.business)
 
   useEffect(() => {
@@ -26,9 +27,12 @@ export default function Profile({ data, commit, setDirty }) {
           </div>
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            commit({ ...data, business: draft }, "İşletme bilgileri kaydedildi")
+            if (saving) return
+            setSaving(true)
+            try { await commit({ ...data, business: draft }, "İşletme bilgileri kaydedildi") }
+            finally { setSaving(false) }
           }}
         >
           <div className="form-body">
@@ -46,7 +50,7 @@ export default function Profile({ data, commit, setDirty }) {
                     key === "email" ? "email" : key === "phone" ? "tel" : "text"
                   }
                   required
-                  readOnly={key === "email"}
+                  disabled={saving}
                   value={draft[key] || ""}
                   onChange={(e) =>
                     setDraft({ ...draft, [key]: e.target.value })
@@ -54,7 +58,7 @@ export default function Profile({ data, commit, setDirty }) {
                 />
               ))}
             </div>
-            <p className="muted">Giriş e-postası bu ekrandan değiştirilemez. Değişiklik için sistem yöneticisine başvurun.</p>
+            <p className="muted">E-posta adresinizi değiştirirseniz yeni adresinizle yeniden giriş yapmanız gerekir. Sonraki giriş kodları yeni adresinize gönderilir.</p>
             <Field label="Adres">
               <textarea
                 rows={3}
@@ -77,13 +81,13 @@ export default function Profile({ data, commit, setDirty }) {
           <div className="modal-actions">
             <Button
               type="button"
-              disabled={dirty == false}
+              disabled={saving || dirty == false}
               onClick={() => setDraft(data.business)}
             >
               Vazgeç
             </Button>
-            <Button kind="primary" type="submit" disabled={dirty == false}>
-              Değişiklikleri kaydet
+            <Button kind="primary" type="submit" disabled={saving || dirty == false}>
+              {saving ? "Kaydediliyor…" : "Değişiklikleri kaydet"}
             </Button>
           </div>
         </form>

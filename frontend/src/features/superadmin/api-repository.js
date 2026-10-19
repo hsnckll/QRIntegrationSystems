@@ -193,9 +193,10 @@ export function createBusiness(x) {
 }
 
 export function updateBusiness(x) {
-  // Not: Backend güvenlik gereği e-posta ve slug'ın buradan değişmesine izin vermiyor.
+  // Menü adresi sabittir; giriş e-postası işletme bilgileriyle güncellenebilir.
   return businessApi.update(x.id, {
     name: x.name.trim(),
+    email: x.email.trim().toLowerCase(),
     ownerName: x.owner,
     phone: x.phone,
     address: x.address,

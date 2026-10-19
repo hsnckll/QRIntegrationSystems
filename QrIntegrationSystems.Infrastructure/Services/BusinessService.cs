@@ -172,6 +172,19 @@ namespace QrIntegrationSystems.Infrastructure.Services
             if (business == null)
                 throw new ValidationException("İşletme bulunamadı.");
 
+            var oldEmail = business.Email.Trim().ToLowerInvariant();
+            var nextEmail = dto.Email == null ? oldEmail : dto.Email.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(nextEmail) || nextEmail.Length > 254 || !new EmailAddressAttribute().IsValid(nextEmail))
+                throw new ValidationException("Geçerli bir e-posta adresi girin.");
+            var emailChanged = oldEmail != nextEmail;
+            if (emailChanged)
+            {
+                if (await _db.Businesses.AnyAsync(b => b.Id != id && !b.IsDeleted && b.Email.ToLower() == nextEmail))
+                    throw new ValidationException("Bu e-posta adresi başka bir işletme tarafından kullanılıyor.");
+                if (await _db.SuperAdmins.AnyAsync(a => a.Email.ToLower() == nextEmail))
+                    throw new ValidationException("Yönetici e-postası işletme e-postası olarak kullanılamaz.");
+            }
+
             // Template kontrolü
             bool templateExists = await _db.Templates
                 .AnyAsync(t => t.Id == dto.TemplateId);
@@ -186,13 +199,21 @@ namespace QrIntegrationSystems.Infrastructure.Services
             }
 
             business.Name = dto.Name;
+            business.Email = nextEmail;
             business.OwnerName = dto.OwnerName;
             business.Phone = dto.Phone;
             business.Address = dto.Address;
             business.TemplateId = dto.TemplateId;
             business.UpdatedAt = DateTime.UtcNow;
 
+            if (emailChanged)
+            {
+                var pendingCodes = await _db.OTPCodes.Where(o => !o.IsUsed &&
+                    (o.Email.ToLower() == oldEmail || o.Email.ToLower() == nextEmail)).ToListAsync();
+                foreach (var code in pendingCodes) code.IsUsed = true;
+            }
             await _db.SaveChangesAsync();
+            if (emailChanged) _sessions.RevokeBusiness(id);
 
             return await GetByIdAsync(id);
         }

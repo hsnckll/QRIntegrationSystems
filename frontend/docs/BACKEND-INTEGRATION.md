@@ -32,7 +32,7 @@ launchSettings.json: HTTPS `https://localhost:7168`, HTTP `http://localhost:5231
 
 1. Category/Product controller'ları Business rolünü ve token'daki BusinessId'yi kullanıyor. SuperAdmin için açık businessId kapsamlı endpoint veya role göre güvenli çözüm eklenmeli. Yalnızca rol niteliğine SuperAdmin eklemek yeterli değil; mevcut GetCurrentBusinessId akışı da ayrılmalı. İşletme rolü hiçbir zaman başka işletmenin id'sini seçememeli.
 2. Logo/banner endpoint'leri şu an SuperAdmin ve Business'a açık. İstenen kurala göre sadece SuperAdmin olmalı. UpdateBusinessDto içindeki TemplateId de Business rolünden değiştirilebiliyor; ayrı DTO/yetki gerekir.
-3. UpdateBusinessDto e-posta ve slug değiştirmiyor; demo bunları düzenliyor. Canlıda bu alanlar kilitlenmeli veya SuperAdmin'e özel endpoint ve slug yönlendirme politikası eklenmeli.
+3. UpdateBusinessDto isteğe bağlı `email` kabul eder; gönderilmezse adres korunur. E-posta hem SuperAdmin hem de işletmenin kendi profili üzerinden değiştirilebilir. Kullanılan işletme/yönetici adresleri reddedilir; değişiklik eski işletme oturumlarını ve bekleyen kodları geçersizleştirir. Slug değiştirilemez.
 4. İşletme geri yükleme ve silinenleri listeleme endpoint'leri yok. Demo butonları API eklenmeden bağlanmamalı.
 5. SubscriptionController'da güncelleme/uzatma yok. Tarih uzatmayı PUT/PATCH ile uygulamak veya yeni dönem kaydı oluşturmak kararlaştırılmalı. Mevcut abonelik iş kurallarıyla çakışan tarih aralıkları kontrol edilmeli.
 6. Logs tablosu ve DTO var; controller listesinde log endpoint'i yok. İncelenen servislerde audit yazımı görülmedi. Güvenilir actor, old/new, zaman ve businessId sunucuda, mümkünse işlemle aynı transaction içinde yazılmalı. Tarayıcıdan gelen actor'a güvenilmemeli.
