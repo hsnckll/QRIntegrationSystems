@@ -1,6 +1,8 @@
 name: Okutye deployment
 
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
 
 permissions:
