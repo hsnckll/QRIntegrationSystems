@@ -10,6 +10,7 @@ namespace QrIntegrationSystems.Application.DTOs.Menu
 
         // Template.FolderName değeri — frontend bunu okuyarak doğru temayı yükler
         public string TemplateName { get; set; } = null!;
+        public string? TemplateEntryUrl { get; set; }
 
         public List<MenuCategoryDto> Categories { get; set; } = new();
     }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using QrIntegrationSystems.Application.DTOs.Menu;
 using QrIntegrationSystems.Application.Interfaces;
 using QrIntegrationSystems.Domain.Entities;
@@ -89,15 +89,36 @@ namespace QrIntegrationSystems.Infrastructure.Services
             }
 
             // 5. ADIM: Müşterinin telefonuna gidecek tertemiz PublicMenuDto paketini oluştur ve dön
+            string? entryUrl = business.Template != null
+                ? _packages.EntryUrl(business.Template.FolderName)
+                : null;
+
             return new PublicMenuDto
             {
                 BusinessName = business.Name,
                 LogoPath = business.LogoPath,
                 BannerPath = business.BannerPath,
                 // Frontend bu TemplateName değerine bakarak (Örn: "template-modern") hangi tasarımı çizeceğini anlar
-                TemplateName = business.Template != null && _packages.IsAvailable(business.Template.FolderName) ? business.Template.FolderName : "",
+                TemplateName = (business.Template != null && entryUrl != null) ? business.Template.FolderName : "",
+                TemplateEntryUrl = entryUrl,
                 Categories = categories
             };
+        }
+
+        public async Task<bool> IsSlugActiveAsync(string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug) == true)
+            {
+                return false;
+            }
+
+            string cleanSlug = slug.Trim().ToLower();
+
+            return await _db.Businesses
+                .AsNoTracking()
+                .AnyAsync(b => b.Slug == cleanSlug
+                            && b.IsActive == true
+                            && b.IsDeleted == false);
         }
     }
 }

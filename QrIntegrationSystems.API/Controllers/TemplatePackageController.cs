@@ -139,25 +139,28 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
     }
 
     // A random capability addresses installed assets; no tenant data or session is stored in packages.
-    [HttpGet("assets/{code}/{capability}/{**asset}"), AllowAnonymous]
+    [HttpGet("assets/{code}/{capability}/{**asset}"), HttpHead("assets/{code}/{capability}/{**asset}"), AllowAnonymous]
     public IActionResult Asset(string code, string capability, string asset)
     {
         try
         {
             var directory = store.DirectoryFor(code);
             var key = Path.Combine(directory, ".capability");
-            if (!System.IO.File.Exists(key) || System.IO.File.ReadAllText(key) != capability) return NotFound();
+            if (System.IO.File.Exists(key) == false || System.IO.File.ReadAllText(key) != capability) return NotFound();
             asset = TemplatePackageStore.SafeRelative(asset);
             var path = Path.Combine(directory, asset.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(path)) return NotFound();
+            if (System.IO.File.Exists(path) == false) return NotFound();
             Response.Headers["Content-Security-Policy"] = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' https: http:; style-src 'unsafe-inline' https: http:; img-src https: http: data:; font-src https: http: data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'";
             Response.Headers["Access-Control-Allow-Origin"] = "*"; // Module scripts load from an opaque sandbox origin.
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             Response.Headers["Referrer-Policy"] = "no-referrer";
-            Response.Headers["Cache-Control"] = "no-cache";
             var ext = Path.GetExtension(path).ToLowerInvariant();
+            Response.Headers["Cache-Control"] = (ext == ".html" || ext == ".json")
+                ? "public, max-age=60, must-revalidate"
+                : "public, max-age=31536000, immutable";
             var mime = ext switch { ".html" => "text/html", ".js" => "text/javascript", ".css" => "text/css", ".json" => "application/json", ".svg" => "image/svg+xml", ".png" => "image/png", ".webp" => "image/webp", ".jpg" or ".jpeg" => "image/jpeg", ".woff" => "font/woff", ".woff2" => "font/woff2", ".ico" => "image/x-icon", _ => "application/octet-stream" };
-            return PhysicalFile(path, mime);
+            var (servePath, serveMime) = store.ResolveOptimizedAsset(code, asset, path, mime);
+            return PhysicalFile(servePath, serveMime);
         }
         catch (ArgumentException) { return NotFound(); }
     }
