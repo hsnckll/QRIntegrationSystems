@@ -13,7 +13,7 @@ export default function TemplateForm({onSave,onClose}) {
     setSelection({files:Array.from(files),paths})
   }
   return <form onSubmit={async e=>{e.preventDefault();if(!selection || busy)return;setBusy(true);setError('');try{await onSave(selection)}catch(err){setError(err.message || 'Paket yüklenemedi.');setBusy(false)}}}>
-    <div className="form-body"><p>React projenizin derlenmiş <strong>dist</strong> klasörünü veya bu klasörün içeriğini taşıyan ZIP dosyasını yükleyin.</p><p className="muted small">Paket kökü: index.html, template.json ve assets/. Şablon adı ve kodu manifestten alınır. En fazla 32 MB ve 1000 dosya.</p>
+    <div className="form-body"><p>React projenizin derlenmiş <strong>dist</strong> klasörünü veya bu klasörün içeriğini taşıyan ZIP dosyasını yükleyin.</p><p className="muted small">Paket kökü: index.html, template.json ve assets/. Şablon adı ve kodu manifestten alınır. En fazla 32 MB ve 1000 dosya.</p><p className="muted small">Aynı şablon koduyla yüklediğiniz paket mevcut şablonu günceller. İşletme atamaları korunur; bağlı işletmeler güncel tasarımı kullanır.</p>
     <input ref={folder} type="file" webkitdirectory="" multiple hidden disabled={busy} onChange={e=>choose(e.target.files,false)}/><input ref={zip} type="file" accept=".zip" hidden disabled={busy} onChange={e=>choose(e.target.files,true)}/>
     <div style={{display:'flex',gap:12,flexWrap:'wrap',margin:'24px 0'}}><Button type="button" disabled={busy} onClick={()=>folder.current.click()}>Klasör seç</Button><Button type="button" disabled={busy} onClick={()=>zip.current.click()}>ZIP seç</Button></div>
     {selection && <p role="status">{selection.archive ? selection.archive.name : `${selection.files.length} dosya seçildi`}</p>}

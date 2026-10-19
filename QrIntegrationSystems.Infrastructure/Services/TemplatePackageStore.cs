@@ -8,6 +8,7 @@ namespace QrIntegrationSystems.Infrastructure.Services;
 public sealed record TemplateManifest(int SchemaVersion, string Id, string Name, string Version, string Entry, int MenuContractVersion);
 public sealed class TemplatePackageStore
 {
+    public static SemaphoreSlim MutationGate { get; } = new(1, 1);
     public string Root { get; }
     public TemplatePackageStore(IOptions<StorageOptions> options) => Root = Path.GetFullPath(options.Value.TemplatesPath);
     public static bool ValidCode(string code) => Regex.IsMatch(code, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) && code.Length <= 80;

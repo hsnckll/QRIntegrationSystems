@@ -1385,18 +1385,21 @@ export default function SuperAdminDashboard() {
           </Modal>
         )}
       {Boolean(modal) == true && modal.type === "templateCreate" && (
-        <Modal title="Yeni Menü Şablonu Tanımla" onClose={() => setModal(null)}>
+        <Modal title="Menü Şablonu Yükle veya Güncelle" onClose={() => setModal(null)}>
           <TemplateForm
             onClose={() => setModal(null)}
             onSave={async (tmpl) => {
               const created = await createTemplate(tmpl)
+              const updating = d.templates.some(t => t.id === created.id)
               setD((prev) => ({
                 ...prev,
-                templates: [...prev.templates, created],
+                templates: prev.templates.some(t => t.id === created.id)
+                  ? prev.templates.map(t => t.id === created.id ? created : t)
+                  : [...prev.templates, created],
               }))
               setModal(null)
               setModal({type:"templatePreview",template:created});
-              setToast(`"${created.name}" yüklendi. İşletmelere atanabilir.`)
+              setToast(`"${created.name}" ${updating ? "güncellendi. İşletme atamaları korundu." : "yüklendi. İşletmelere atanabilir."}`)
             }}
           />
         </Modal>

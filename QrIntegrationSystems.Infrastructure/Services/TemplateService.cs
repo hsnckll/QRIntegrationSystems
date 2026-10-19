@@ -53,22 +53,30 @@ namespace QrIntegrationSystems.Infrastructure.Services
         // ─────────────────────────────────────────
         public async Task DeleteAsync(int id)
         {
-            var inUseCount = await _db.Businesses.CountAsync(b => b.TemplateId == id);
-            if (inUseCount > 0)
+            await TemplatePackageStore.MutationGate.WaitAsync();
+            try
             {
-                throw new ValidationException($"Bu şablon şu anda {inUseCount} işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
-            }
+                var inUseCount = await _db.Businesses.CountAsync(b => b.TemplateId == id && !b.IsDeleted);
+                if (inUseCount > 0)
+                {
+                    throw new ValidationException($"Bu şablon şu anda {inUseCount} işletme tarafından kullanılmaktadır. Silmeden önce ilgili işletmelerin şablonunu değiştirin.");
+                }
 
-            var template = await _db.Templates.FindAsync(id);
-            if (template == null)
-            {
-                throw new ValidationException("Silinmek istenen şablon bulunamadı.");
-            }
+                var template = await _db.Templates.FindAsync(id);
+                if (template == null)
+                {
+                    throw new ValidationException("Silinmek istenen şablon bulunamadı.");
+                }
 
-            var packagePath = _packages.DirectoryFor(template.FolderName);
-            _db.Templates.Remove(template);
-            await _db.SaveChangesAsync();
-            if(Directory.Exists(packagePath)) Directory.Delete(packagePath, true);
+                var packagePath = _packages.DirectoryFor(template.FolderName);
+                // Archived businesses must not retain a foreign key to a removed template.
+                var archived = await _db.Businesses.Where(b => b.TemplateId == id && b.IsDeleted).ToListAsync();
+                foreach (var business in archived) business.TemplateId = null;
+                _db.Templates.Remove(template);
+                await _db.SaveChangesAsync();
+                if(Directory.Exists(packagePath)) Directory.Delete(packagePath, true);
+            }
+            finally { TemplatePackageStore.MutationGate.Release(); }
         }
     }
 }
