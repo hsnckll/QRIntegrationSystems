@@ -10,7 +10,7 @@ using QrIntegrationSystems.Infrastructure.Services;
 namespace QrIntegrationSystems.API.Controllers;
 
 [ApiController, Route("api/template")]
-public sealed class TemplatePackageController(AppDbContext db, TemplatePackageStore store) : ControllerBase
+public sealed class TemplatePackageController(AppDbContext db, TemplatePackageStore store, ILogger<TemplatePackageController> logger) : ControllerBase
 {
     const long MaxBytes = 32 * 1024 * 1024;
     static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase) { ".html", ".js", ".css", ".json", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".woff", ".woff2" };
@@ -23,6 +23,10 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
         var staging = Path.Combine(store.Root, ".staging-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(staging);
         string? installed = null;
+        string? backup = null;
+        string? destination = null;
+        bool locked = false;
+        bool committed = false;
         long total = 0;
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         async Task Save(string name, Stream input)
@@ -72,23 +76,55 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
             var entryName = TemplatePackageStore.SafeRelative(manifest.Entry);
             if (!entryName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || !seen.Contains(entryName)) throw new ArgumentException("Manifest giriş HTML dosyası bulunamadı.");
             // A validated installed package is immediately selectable; preview does not gate availability.
-            var destination = store.DirectoryFor(manifest.Id);
-            if (Directory.Exists(destination) || await db.Templates.AnyAsync(t => t.FolderName == manifest.Id, ct)) throw new ArgumentException("Bu şablon kodu zaten kullanılıyor. Yeni kod ile yükleyin.");
+            await TemplatePackageStore.MutationGate.WaitAsync(ct);
+            locked = true;
+            destination = store.DirectoryFor(manifest.Id);
+            var template = await db.Templates.SingleOrDefaultAsync(t => t.FolderName == manifest.Id, ct);
+            var updated = template != null;
+            if (template == null && Directory.Exists(destination)) throw new ArgumentException("Bu şablon koduna ait kayıtsız paket dosyaları var. Paket depolamasını kontrol edin.");
             await System.IO.File.WriteAllTextAsync(Path.Combine(staging, ".capability"), Guid.NewGuid().ToString("N"), ct);
+            if (Directory.Exists(destination))
+            {
+                backup = Path.Combine(store.Root, ".backup-" + Guid.NewGuid().ToString("N"));
+                Directory.Move(destination, backup);
+            }
             Directory.Move(staging, destination);
             installed = destination;
-            var template = new Template { Name = manifest.Name.Trim(), FolderName = manifest.Id, CreatedAt = DateTime.UtcNow };
-            db.Templates.Add(template);
+            if (template == null)
+            {
+                template = new Template { Name = manifest.Name.Trim(), FolderName = manifest.Id, CreatedAt = DateTime.UtcNow };
+                db.Templates.Add(template);
+            }
+            else
+            {
+                template.Name = manifest.Name.Trim();
+                template.UpdatedAt = DateTime.UtcNow;
+            }
             await db.SaveChangesAsync(ct);
+            committed = true;
             installed = null;
-            return Ok(new { template.Id, template.Name, template.FolderName, entryUrl = store.EntryUrl(template.FolderName), version = manifest.Version });
+            return Ok(new { template.Id, template.Name, template.FolderName, entryUrl = store.EntryUrl(template.FolderName), version = manifest.Version, updated });
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidDataException or JsonException or DbUpdateException)
         { return BadRequest(new { message = ex is DbUpdateException ? "Şablon kaydı oluşturulamadı." : ex.Message }); }
         finally
         {
-            if (Directory.Exists(staging)) Directory.Delete(staging, true);
-            if (installed != null && Directory.Exists(installed)) Directory.Delete(installed, true);
+            try
+            {
+                if (!committed)
+                {
+                    if (installed != null && Directory.Exists(installed)) Directory.Delete(installed, true);
+                    if (backup != null && Directory.Exists(backup)) Directory.Move(backup, destination!);
+                }
+                if (Directory.Exists(staging)) Directory.Delete(staging, true);
+                if (committed && backup != null && Directory.Exists(backup))
+                {
+                    try { Directory.Delete(backup, true); }
+                    catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException)
+                    { logger.LogWarning(cleanupError, "Updated template backup could not be removed: {Backup}", backup); }
+                }
+            }
+            finally { if (locked) TemplatePackageStore.MutationGate.Release(); }
         }
     }
 
@@ -103,25 +139,28 @@ public sealed class TemplatePackageController(AppDbContext db, TemplatePackageSt
     }
 
     // A random capability addresses installed assets; no tenant data or session is stored in packages.
-    [HttpGet("assets/{code}/{capability}/{**asset}"), AllowAnonymous]
+    [HttpGet("assets/{code}/{capability}/{**asset}"), HttpHead("assets/{code}/{capability}/{**asset}"), AllowAnonymous]
     public IActionResult Asset(string code, string capability, string asset)
     {
         try
         {
             var directory = store.DirectoryFor(code);
             var key = Path.Combine(directory, ".capability");
-            if (!System.IO.File.Exists(key) || System.IO.File.ReadAllText(key) != capability) return NotFound();
+            if (System.IO.File.Exists(key) == false || System.IO.File.ReadAllText(key) != capability) return NotFound();
             asset = TemplatePackageStore.SafeRelative(asset);
             var path = Path.Combine(directory, asset.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(path)) return NotFound();
+            if (System.IO.File.Exists(path) == false) return NotFound();
             Response.Headers["Content-Security-Policy"] = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' https: http:; style-src 'unsafe-inline' https: http:; img-src https: http: data:; font-src https: http: data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'";
             Response.Headers["Access-Control-Allow-Origin"] = "*"; // Module scripts load from an opaque sandbox origin.
             Response.Headers["X-Content-Type-Options"] = "nosniff";
             Response.Headers["Referrer-Policy"] = "no-referrer";
-            Response.Headers["Cache-Control"] = "no-cache";
             var ext = Path.GetExtension(path).ToLowerInvariant();
+            Response.Headers["Cache-Control"] = (ext == ".html" || ext == ".json")
+                ? "public, max-age=60, must-revalidate"
+                : "public, max-age=31536000, immutable";
             var mime = ext switch { ".html" => "text/html", ".js" => "text/javascript", ".css" => "text/css", ".json" => "application/json", ".svg" => "image/svg+xml", ".png" => "image/png", ".webp" => "image/webp", ".jpg" or ".jpeg" => "image/jpeg", ".woff" => "font/woff", ".woff2" => "font/woff2", ".ico" => "image/x-icon", _ => "application/octet-stream" };
-            return PhysicalFile(path, mime);
+            var (servePath, serveMime) = store.ResolveOptimizedAsset(code, asset, path, mime);
+            return PhysicalFile(servePath, serveMime);
         }
         catch (ArgumentException) { return NotFound(); }
     }

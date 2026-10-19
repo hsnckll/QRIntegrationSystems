@@ -2,6 +2,7 @@ import ProductWorkbench from "./ProductWorkbench"
 import CategoryManager from "./CategoryManager"
 import PlatformBrand from "../../shared/PlatformBrand"
 import LoadingDashboard from "../../shared/LoadingDashboard"
+import { buildPublicMenuUrl, getRootDomain } from "../../shared/session"
 import React, { useState, useEffect, useRef } from "react"
 import {
   Icon,
@@ -571,11 +572,15 @@ export default function CustomerDashboard() {
                 </p>
                 <div className="preview-address">
                   <Icon name="link" size={17} />
-                  <span>/menu/{data.business.slug || ""}</span>
+                  <span>
+                    {Boolean(data.business.slug) == true
+                      ? `https://${data.business.slug}.${getRootDomain()}`
+                      : data.business.qrUrl || ""}
+                  </span>
                 </div>
                 <a
                   className="button primary"
-                  href={`/menu.html?slug=${data.business.slug || ""}`}
+                  href={buildPublicMenuUrl(data.business.slug, data.business.qrUrl)}
                   target="_blank"
                   rel="noreferrer"
                 >

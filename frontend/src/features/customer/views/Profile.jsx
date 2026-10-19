@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { Icon, Button, Field } from "../../../shared/components"
+import { getRootDomain } from "../../../shared/session"
 
 export default function Profile({ data, commit, setDirty }) {
   const [draft, setDraft] = useState(data.business)
@@ -70,7 +71,11 @@ export default function Profile({ data, commit, setDirty }) {
             </Field>
             <Field
               label="Menü adresiniz"
-              value={`/menu/${draft.slug || ""}`}
+              value={
+                Boolean(draft.slug) == true
+                  ? `https://${draft.slug}.${getRootDomain()}`
+                  : draft.qrUrl || ""
+              }
               readOnly
             />
             <p className="muted small">

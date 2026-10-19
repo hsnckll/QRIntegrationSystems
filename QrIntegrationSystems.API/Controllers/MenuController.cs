@@ -39,5 +39,46 @@ namespace QrIntegrationSystems.API.Controllers
             // Menü başarıyla bulundu (Arka planda QRScans tablosuna +1 okuma kaydedildi)
             return Ok(menu);
         }
+
+        // ─────────────────────────────────────────
+        // CADDY ON-DEMAND TLS DOĞRULAMA UCU
+        // GET /api/menu/verify-domain?domain=doydoy-doner.okutye.com.tr
+        // ─────────────────────────────────────────
+        [HttpGet("verify-domain")]
+        public async Task<IActionResult> VerifyDomain([FromQuery] string? domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain) == true)
+            {
+                return BadRequest();
+            }
+
+            string cleanDomain = domain.Trim().ToLowerInvariant();
+            string rootDomain = "okutye.com.tr";
+
+            if (cleanDomain == rootDomain || cleanDomain == $"www.{rootDomain}")
+            {
+                return Ok();
+            }
+
+            string suffix = $".{rootDomain}";
+            if (cleanDomain.EndsWith(suffix) == false)
+            {
+                return NotFound();
+            }
+
+            string slug = cleanDomain.Substring(0, cleanDomain.Length - suffix.Length);
+            if (string.IsNullOrWhiteSpace(slug) == true || slug.Contains('.') == true)
+            {
+                return NotFound();
+            }
+
+            bool isActive = await _menuService.IsSlugActiveAsync(slug);
+            if (isActive == false)
+            {
+                return NotFound();
+            }
+
+            return Ok();
+        }
     }
 }

@@ -1,0 +1,32 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY QrIntegrationSystems.sln ./
+COPY QrIntegrationSystems.API/QrIntegrationSystems.API.csproj QrIntegrationSystems.API/
+COPY QrIntegrationSystems.Application/QrIntegrationSystems.Application.csproj QrIntegrationSystems.Application/
+COPY QrIntegrationSystems.Domain/QrIntegrationSystems.Domain.csproj QrIntegrationSystems.Domain/
+COPY QrIntegrationSystems.Infrastructure/QrIntegrationSystems.Infrastructure.csproj QrIntegrationSystems.Infrastructure/
+
+RUN dotnet restore QrIntegrationSystems.API/QrIntegrationSystems.API.csproj -r linux-arm64
+
+COPY QrIntegrationSystems.API/ QrIntegrationSystems.API/
+COPY QrIntegrationSystems.Application/ QrIntegrationSystems.Application/
+COPY QrIntegrationSystems.Domain/ QrIntegrationSystems.Domain/
+COPY QrIntegrationSystems.Infrastructure/ QrIntegrationSystems.Infrastructure/
+
+RUN dotnet publish QrIntegrationSystems.API/QrIntegrationSystems.API.csproj \
+    -c Release \
+    -r linux-arm64 \
+    --self-contained false \
+    --no-restore \
+    -o /out && \
+    printf '{\n  "AllowedHosts": "*",\n  "Logging": {\n    "LogLevel": {\n      "Default": "Information",\n      "Microsoft.AspNetCore": "Warning"\n    }\n  }\n}\n' > /out/appsettings.json && \
+    mkdir -p /out/wwwroot && \
+    rm -rf /out/wwwroot/uploads && \
+    ln -s /var/lib/okutye/uploads /out/wwwroot/uploads
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+COPY --from=build /out ./
+EXPOSE 5000
+ENTRYPOINT ["dotnet", "QrIntegrationSystems.API.dll"]

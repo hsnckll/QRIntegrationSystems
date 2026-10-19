@@ -34,7 +34,7 @@ public sealed class StorageOptions
 public sealed class AppOptions
 {
     public const string SectionName = "AppSettings";
-    public string MenuBaseUrl { get; set; } = "https://{slug}.okutye.com";
+    public string MenuBaseUrl { get; set; } = "https://{slug}.okutye.com.tr";
     public string[] AllowedOrigins { get; set; } = ["http://localhost:5177", "http://127.0.0.1:5177"];
     public string[] TrustedProxies { get; set; } = [];
 }

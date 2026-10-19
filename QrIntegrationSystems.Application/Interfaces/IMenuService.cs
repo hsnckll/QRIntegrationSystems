@@ -9,5 +9,6 @@ namespace QrIntegrationSystems.Application.Interfaces
         // slug: "kafe-istanbul" gibi URL-safe işletme tanımlayıcısı
         // İşletme aktif değilse veya bulunamazsa null döner → controller 404 verir
         Task<PublicMenuDto?> GetMenuBySlugAsync(string slug);
+        Task<bool> IsSlugActiveAsync(string slug);
     }
 }

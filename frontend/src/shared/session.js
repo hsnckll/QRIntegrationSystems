@@ -43,3 +43,39 @@ export async function logout() {
 export function landingFor(role) {
   return role === "SuperAdmin" ? routes.admin : routes.business
 }
+export function getRootDomain() {
+  return (import.meta.env?.VITE_ROOT_DOMAIN || "okutye.com.tr").toLowerCase()
+}
+export function getSubdomainSlug() {
+  const host = window.location.hostname.toLowerCase()
+  const rootDomain = getRootDomain()
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === rootDomain ||
+    host === `www.${rootDomain}`
+  ) {
+    return ""
+  }
+  if (host.endsWith(`.${rootDomain}`) == true) {
+    const sub = host.slice(0, -(rootDomain.length + 1))
+    if (Boolean(sub) == true && sub.includes(".") == false && sub !== "www") {
+      return sub
+    }
+  }
+  return ""
+}
+export function buildPublicMenuUrl(slug, qrUrl = "") {
+  const cleanSlug = (slug || "").trim().toLowerCase()
+  if (Boolean(cleanSlug) == false) {
+    return qrUrl || routes.menu
+  }
+  const host = window.location.hostname.toLowerCase()
+  if (host === "localhost" || host === "127.0.0.1") {
+    return `${routes.menu}?slug=${encodeURIComponent(cleanSlug)}`
+  }
+  if (Boolean(qrUrl) == true && qrUrl.includes("/menu.html") == false && qrUrl.startsWith("/menu/") == false) {
+    return qrUrl
+  }
+  return `https://${encodeURIComponent(cleanSlug)}.${getRootDomain()}`
+}
